@@ -42,12 +42,12 @@ jobs:
 
       - name: Run backend tests
         env:
-          PYTHONPATH: backend
-          DATABASE_URL: sqlite:///:memory:
-          JWT_SECRET: ci_test_jwt_secret_token_2026
-          ADMIN_SECRET_KEY: ci_test_admin_secret_key_2026
-          ADMIN_NOTIFICATION_EMAIL: akshay123modi@gmail.com
-          EMAIL_FROM: TrustMesh Alerts <onboarding@resend.dev>
+          PYTHONPATH: "backend"
+          DATABASE_URL: "sqlite:///:memory:"
+          JWT_SECRET: "ci_test_jwt_secret_token_2026"
+          ADMIN_SECRET_KEY: "ci_test_admin_secret_key_2026"
+          ADMIN_NOTIFICATION_EMAIL: "akshay123modi@gmail.com"
+          EMAIL_FROM: "TrustMesh Alerts <onboarding@resend.dev>"
           RESEND_API_KEY: ""
         run: |
           pytest backend/tests/ -v
