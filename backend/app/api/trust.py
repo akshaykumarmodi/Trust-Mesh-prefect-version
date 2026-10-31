@@ -5,6 +5,7 @@ from app.database.session import get_db
 from app.models import Contributor, Project, Vouch, Denouncement, CoordinatedCampaign
 from app.services.trust_engine import TrustEvaluationEngine
 from app.schemas import TrustEvaluationOut
+from app.services.activity_logger import ActivityLogger
 
 router = APIRouter(prefix="/trust", tags=["trust"])
 
@@ -21,7 +22,26 @@ def evaluate_contributor_trust(
     if not contrib:
         raise HTTPException(status_code=404, detail=f"Contributor '{contributor_id}' not found")
 
-    return TrustEvaluationEngine.evaluate(db, contrib.id, viewing_project_id)
+    res = TrustEvaluationEngine.evaluate(db, contrib.id, viewing_project_id)
+
+    ActivityLogger.log(
+        db=db,
+        event_type="TRUST_EVALUATION_COMPLETED",
+        event_description=f"Trust evaluation computed for @{contrib.username} (Confidence: {res.trust_confidence:.2f}, State: {res.reputation_state})",
+        resource_type="contributor",
+        resource_id=contrib.id,
+        github_username=contrib.username,
+        project_name=viewing_project_id,
+        status="SUCCESS",
+        metadata={
+            "trust_confidence": res.trust_confidence,
+            "reputation_state": res.reputation_state,
+            "viewing_project": viewing_project_id
+        }
+    )
+
+    return res
+
 
 @router.get("/overview")
 def get_trust_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:

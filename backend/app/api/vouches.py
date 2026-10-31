@@ -1,11 +1,13 @@
 import hashlib
 import uuid
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models import Vouch, Contributor, Project
+from app.models import Vouch, Contributor, Project, User
 from app.schemas import VouchOut, VouchCreate
+from app.services.activity_logger import ActivityLogger
+from app.services.auth_service import optional_current_user
 
 router = APIRouter(prefix="/vouches", tags=["vouches"])
 
@@ -32,7 +34,11 @@ def list_vouches(db: Session = Depends(get_db)):
     return results
 
 @router.post("", response_model=VouchOut, status_code=status.HTTP_201_CREATED)
-def submit_vouch(data: VouchCreate, db: Session = Depends(get_db)):
+def submit_vouch(
+    data: VouchCreate,
+    user: Optional[User] = Depends(optional_current_user),
+    db: Session = Depends(get_db)
+):
     # 1. Verify source project exists
     project = db.query(Project).filter(Project.id == data.source_project_id).first()
     if not project:
@@ -86,6 +92,32 @@ def submit_vouch(data: VouchCreate, db: Session = Depends(get_db)):
     contrib.total_contributions = (contrib.total_contributions or 0) + 1
     db.commit()
     db.refresh(vouch)
+
+    submitter_name = user.name if user and user.name else "Not provided"
+    submitter_email = user.email if user else "Not provided"
+
+    ActivityLogger.log(
+        db=db,
+        event_type="VOUCH_SUBMITTED",
+        event_description=f"Peer vouch submitted for @{contrib.username} from {project.name}: {vouch.reason}",
+        user=user,
+        resource_type="vouch",
+        resource_id=vouch.id,
+        project_name=project.name,
+        status="SUCCESS",
+        metadata={
+            "recipient_contributor": contrib.username,
+            "recipient_contributor_id": contrib.id,
+            "source_project_id": project.id,
+            "source_project_name": project.name,
+            "vouch_reason": vouch.reason,
+            "evidence_url": vouch.evidence_url,
+            "confidence": vouch.confidence,
+            "provenance_hash": vouch.provenance_hash,
+            "submitter_name": submitter_name,
+            "submitter_email": submitter_email
+        }
+    )
 
     return VouchOut(
         id=vouch.id,

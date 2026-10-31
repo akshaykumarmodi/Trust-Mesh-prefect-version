@@ -1,5 +1,6 @@
+import json
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.models import Contributor, Vouch, Denouncement, Project
@@ -85,3 +86,94 @@ def get_contributor(contributor_id: str, db: Session = Depends(get_db)):
     if not c:
         raise HTTPException(status_code=404, detail=f"Contributor {contributor_id} not found")
     return serialize_contributor(c, db)
+
+@router.post("", response_model=ContributorOut, status_code=status.HTTP_201_CREATED)
+def create_contributor(data: ContributorCreate, db: Session = Depends(get_db)):
+    uname = data.username.strip().lstrip("@").lower()
+    if not uname:
+        raise HTTPException(status_code=400, detail="Username is required")
+
+    cid = data.id or f"contrib-{uname}"
+    existing = db.query(Contributor).filter(
+        (Contributor.id == cid) | (Contributor.username == uname)
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Contributor with username '@{uname}' already exists")
+
+    # Newcomer fairness: newly registered contributors start as NEWCOMER with clean slate
+    contrib = Contributor(
+        id=cid,
+        username=uname,
+        display_name=data.display_name.strip() if data.display_name else uname,
+        avatar_url=data.avatar_url.strip() if data.avatar_url else f"https://github.com/{uname}.png",
+        github_url=data.github_url.strip() if data.github_url else f"https://github.com/{uname}",
+        bio=data.bio.strip() if data.bio else "Open source contributor on TrustMesh.",
+        skills_json=json.dumps(data.skills if data.skills else []),
+        reputation_state="NEWCOMER",
+        total_contributions=data.total_contributions or 0
+    )
+    db.add(contrib)
+    db.commit()
+    db.refresh(contrib)
+    return serialize_contributor(contrib, db)
+
+@router.get("/{contributor_id}/activity")
+def get_contributor_activity(contributor_id: str, db: Session = Depends(get_db)):
+    c = db.query(Contributor).filter(
+        (Contributor.id == contributor_id) | (Contributor.username == contributor_id)
+    ).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Contributor not found")
+
+    events = []
+    # Vouches received
+    for v in c.vouches:
+        proj = db.query(Project).filter(Project.id == v.source_project_id).first()
+        events.append({
+            "type": "VOUCH_RECEIVED",
+            "title": f"Endorsed by {proj.name if proj else v.source_project_id}",
+            "description": v.reason,
+            "evidence_url": v.evidence_url,
+            "provenance_hash": v.provenance_hash,
+            "confidence": v.confidence,
+            "timestamp": v.created_at.isoformat()
+        })
+    # Denouncements received
+    for d in c.denouncements:
+        proj = db.query(Project).filter(Project.id == d.reporting_project_id).first()
+        events.append({
+            "type": "REPORT_FILED",
+            "title": f"Reported by {proj.name if proj else d.reporting_project_id}",
+            "description": d.reason,
+            "evidence_url": d.evidence_url,
+            "status": d.status,
+            "review_notes": d.review_notes,
+            "timestamp": d.created_at.isoformat()
+        })
+
+    # Verified GitHub Pull Requests
+    from app.models import GitHubPullRequest
+    gh_pulls = db.query(GitHubPullRequest).filter(
+        GitHubPullRequest.author_username == c.username
+    ).all()
+    for gh in gh_pulls:
+        proj = db.query(Project).filter(Project.id == gh.project_id).first()
+        events.append({
+            "type": "GITHUB_PR",
+            "title": f"GitHub PR #{gh.pr_number}: {gh.title}",
+            "description": f"Target: {gh.base_branch} | Commits: {gh.commit_count} | Review: {gh.review_status}",
+            "evidence_url": gh.html_url,
+            "verification_status": gh.verification_status,
+            "state": gh.state,
+            "is_merged": gh.is_merged,
+            "timestamp": gh.created_at.isoformat() if gh.created_at else utc_now().isoformat()
+        })
+
+    events.sort(key=lambda x: x["timestamp"], reverse=True)
+    return {
+        "contributor_id": c.id,
+        "username": c.username,
+        "reputation_state": c.reputation_state,
+        "total_contributions": c.total_contributions,
+        "timeline": events
+    }

@@ -76,6 +76,27 @@ def list_evidence(
                     "timestamp": cmp.detected_at.isoformat()
                 })
 
+    # 4. From Verified GitHub Pull Requests
+    if not type_filter or type_filter.lower() in ("github", "pr", "pull_request"):
+        from app.models import GitHubPullRequest
+        gh_pulls = db.query(GitHubPullRequest).all()
+        for gh in gh_pulls:
+            p = db.query(Project).filter(Project.id == gh.project_id).first()
+            records.append({
+                "id": f"ev-{gh.id}",
+                "type": "GITHUB_PR",
+                "title": f"GitHub PR #{gh.pr_number}: {gh.title}",
+                "contributor_id": f"contrib-gh-{gh.author_username}",
+                "contributor_username": gh.author_username,
+                "source_project": p.name if p else gh.project_id,
+                "evidence_url": gh.html_url,
+                "details": f"State: {gh.state} | Merged: {gh.is_merged} | Base: {gh.base_branch} | Commits: {gh.commit_count}",
+                "status": gh.verification_status,
+                "confidence": 1.0 if gh.verification_status == "Verified GitHub record" else 0.50,
+                "provenance_hash": f"gh-api-v3-{gh.pr_number}",
+                "timestamp": gh.created_at.isoformat()
+            })
+
     if search:
         s = search.lower()
         records = [

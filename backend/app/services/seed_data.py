@@ -2,13 +2,21 @@ import hashlib
 import json
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
-from app.models import Project, Contributor, Vouch, Denouncement, CoordinatedCampaign, ProjectTrustEdge
+from app.models import (
+    Project, Contributor, Vouch, Denouncement, CoordinatedCampaign,
+    ProjectTrustEdge, User, ActivityLog, EmailNotification
+)
 
 def make_hash(data: str) -> str:
     return hashlib.sha256(data.encode()).hexdigest()[:16]
 
 def seed_database(db: Session, reset: bool = False):
+    now = datetime.now(timezone.utc)
+
     if reset:
+        db.query(EmailNotification).delete()
+        db.query(ActivityLog).delete()
+        db.query(User).delete()
         db.query(Vouch).delete()
         db.query(Denouncement).delete()
         db.query(ProjectTrustEdge).delete()
@@ -17,12 +25,143 @@ def seed_database(db: Session, reset: bool = False):
         db.query(Project).delete()
         db.commit()
 
+    # 0. Ensure Admin User exists
+    admin_email = "akshay123modi@gmail.com"
+    admin_user = db.query(User).filter(User.email == admin_email).first()
+    if not admin_user:
+        from app.services.auth_service import hash_password
+        admin_user = User(
+            id="usr-admin-akshay",
+            email=admin_email,
+            hashed_password=hash_password("TrustMesh2026!"),
+            name="Akshay Kumar Modi",
+            github_username="akshaymodi",
+            is_verified=True,
+            is_admin=True,
+            failed_login_attempts=0,
+            created_at=now - timedelta(days=60),
+            last_login_at=now - timedelta(minutes=10)
+        )
+        db.add(admin_user)
+        db.commit()
+
+    # 0.1 Seed initial baseline activity logs if empty
+    if db.query(ActivityLog).count() == 0:
+        initial_logs = [
+            ActivityLog(
+                id="act-seed-reg-1",
+                user_id=admin_user.id,
+                user_email=admin_email,
+                user_name="Akshay Kumar Modi",
+                github_username="akshaymodi",
+                event_type="AUTH_REGISTRATION",
+                event_description="Administrative master identity provisioned for akshay123modi@gmail.com",
+                resource_type="user",
+                resource_id=admin_user.id,
+                status="SUCCESS",
+                metadata_json=json.dumps({"auth_method": "seed_provision", "is_admin": True}),
+                timestamp=now - timedelta(days=60)
+            ),
+            ActivityLog(
+                id="act-seed-login-1",
+                user_id=admin_user.id,
+                user_email=admin_email,
+                user_name="Akshay Kumar Modi",
+                github_username="akshaymodi",
+                event_type="AUTH_LOGIN",
+                event_description="Administrator signed in to TrustMesh Security Intelligence Console",
+                resource_type="user",
+                resource_id=admin_user.id,
+                status="SUCCESS",
+                metadata_json=json.dumps({"auth_method": "email_password"}),
+                timestamp=now - timedelta(days=5)
+            ),
+            ActivityLog(
+                id="act-seed-proj-1",
+                user_id=admin_user.id,
+                user_email=admin_email,
+                user_name="Akshay Kumar Modi",
+                event_type="PROJECT_CREATED",
+                event_description="Project HyperFlow Engine registered in federation mesh",
+                resource_type="project",
+                resource_id="proj-hyperflow",
+                project_name="HyperFlow Engine",
+                status="SUCCESS",
+                metadata_json=json.dumps({"repo_url": "https://github.com/hyperflow-org/hyperflow", "category": "Distributed Systems"}),
+                timestamp=now - timedelta(days=30)
+            ),
+            ActivityLog(
+                id="act-seed-gh-1",
+                user_id=admin_user.id,
+                user_email=admin_email,
+                user_name="Akshay Kumar Modi",
+                event_type="GITHUB_REPO_IMPORTED",
+                event_description="Public repository hyperflow-org/hyperflow imported via GitHub REST API v3",
+                resource_type="project",
+                resource_id="proj-hyperflow",
+                project_name="HyperFlow Engine",
+                status="SUCCESS",
+                metadata_json=json.dumps({"default_branch": "main", "visibility": "public"}),
+                timestamp=now - timedelta(days=20)
+            ),
+            ActivityLog(
+                id="act-seed-vouch-1",
+                user_id=admin_user.id,
+                user_email=admin_email,
+                event_type="VOUCH_SUBMITTED",
+                event_description="Peer vouch submitted for @elena-rustacean from HyperFlow Engine",
+                resource_type="vouch",
+                resource_id="vouch-1",
+                project_name="HyperFlow Engine",
+                status="SUCCESS",
+                metadata_json=json.dumps({"contributor": "elena-rustacean", "confidence": 1.0}),
+                timestamp=now - timedelta(days=15)
+            ),
+            ActivityLog(
+                id="act-seed-sec-1",
+                user_id=None,
+                user_email="unknown-bot@tor-exit.net",
+                event_type="AUTH_FAILED_LOGIN",
+                event_description="Failed login attempt with non-existent account unknown-bot@tor-exit.net",
+                resource_type="user",
+                status="FAILED",
+                metadata_json=json.dumps({"auth_method": "email_password", "recognized_account": False}),
+                timestamp=now - timedelta(days=2)
+            ),
+            ActivityLog(
+                id="act-seed-campaign-1",
+                user_id=None,
+                event_type="CAMPAIGN_DETECTED",
+                event_description="Coordinated AI Slop Swarm detected across 3 federated repositories",
+                resource_type="campaign",
+                resource_id="camp-slop-docstring",
+                status="SUSPICIOUS",
+                metadata_json=json.dumps({"pattern": "Docstring mutation burst", "signal_strength": 0.89}),
+                timestamp=now - timedelta(days=1)
+            )
+        ]
+        db.add_all(initial_logs)
+        db.commit()
+
+        # Seed an audit record for initial notification delivery
+        audit_email = EmailNotification(
+            id="eml-seed-init",
+            activity_log_id="act-seed-reg-1",
+            recipient=admin_email,
+            subject="[TrustMesh Alert] AUTH_REGISTRATION - SUCCESS",
+            status="SENT",
+            resend_id="resend_msg_seed_init_001",
+            error_message="",
+            attempt_count=1,
+            created_at=now - timedelta(days=60),
+            sent_at=now - timedelta(days=60)
+        )
+        db.add(audit_email)
+        db.commit()
+
     if db.query(Project).count() > 0:
         return
 
-    now = datetime.now(timezone.utc)
-
-    # 1. Projects
     projects = [
         Project(
             id="proj-hyperflow",

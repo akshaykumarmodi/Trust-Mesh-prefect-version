@@ -10,13 +10,27 @@ import DenouncementsView from './pages/DenouncementsView';
 import CampaignsView from './pages/CampaignsView';
 import EvidenceCenterView from './pages/EvidenceCenterView';
 import SettingsView from './pages/SettingsView';
+import AdminActivityView from './pages/AdminActivityView';
+import AuthModal from './components/AuthModal';
 import { api } from './services/api';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('landing');
   const [aiStatus, setAiStatus] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
+    // Check local storage for existing session
+    try {
+      const storedUser = localStorage.getItem('trustmesh_user');
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+    } catch {
+      // ignore
+    }
+
     async function checkStatus() {
       try {
         const status = await api.getAIStatus();
@@ -38,6 +52,17 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleLogout = async () => {
+    try {
+      await api.logout().catch(() => {});
+    } finally {
+      localStorage.removeItem('trustmesh_token');
+      localStorage.removeItem('trustmesh_user');
+      localStorage.removeItem('trustmesh_admin_key');
+      setCurrentUser(null);
+    }
+  };
+
   // If on Landing Page
   if (currentView === 'landing') {
     return <LandingPage onEnterApp={(target) => handleNavigate(target || 'overview')} />;
@@ -45,36 +70,50 @@ export default function App() {
 
   // Dashboard Views
   return (
-    <DashboardLayout
-      currentView={currentView}
-      onNavigate={handleNavigate}
-      onOpenLanding={() => handleNavigate('landing')}
-      aiStatus={aiStatus}
-    >
-      {currentView === 'overview' && <OverviewView onNavigate={handleNavigate} />}
-      {currentView === 'network' && (
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-              Interactive Trust Network
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Live multi-project topological graph powered by React Flow. Drag nodes, zoom, pan, and click any node to inspect explainable provenance.
-            </p>
+    <>
+      <DashboardLayout
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        onOpenLanding={() => handleNavigate('landing')}
+        aiStatus={aiStatus}
+        currentUser={currentUser}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onLogout={handleLogout}
+      >
+        {currentView === 'overview' && <OverviewView onNavigate={handleNavigate} />}
+        {currentView === 'network' && (
+          <div className="space-y-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+                Interactive Trust Network
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                Live multi-project topological graph powered by React Flow. Drag nodes, zoom, pan, and click any node to inspect explainable provenance.
+              </p>
+            </div>
+            <TrustNetworkGraph
+              onSelectContributor={(c) => handleNavigate('contributors')}
+              onSelectProject={(p) => handleNavigate('projects')}
+            />
           </div>
-          <TrustNetworkGraph
-            onSelectContributor={(c) => handleNavigate('contributors')}
-            onSelectProject={(p) => handleNavigate('projects')}
-          />
-        </div>
-      )}
-      {currentView === 'contributors' && <ContributorsView />}
-      {currentView === 'projects' && <ProjectsView />}
-      {currentView === 'vouches' && <VouchesView />}
-      {currentView === 'denouncements' && <DenouncementsView />}
-      {currentView === 'campaigns' && <CampaignsView />}
-      {currentView === 'evidence' && <EvidenceCenterView />}
-      {currentView === 'settings' && <SettingsView aiStatus={aiStatus} />}
-    </DashboardLayout>
+        )}
+        {currentView === 'contributors' && <ContributorsView />}
+        {currentView === 'projects' && <ProjectsView />}
+        {currentView === 'vouches' && <VouchesView />}
+        {currentView === 'denouncements' && <DenouncementsView />}
+        {currentView === 'campaigns' && <CampaignsView />}
+        {currentView === 'evidence' && <EvidenceCenterView />}
+        {currentView === 'admin' && <AdminActivityView onOpenAuth={() => setAuthModalOpen(true)} />}
+        {currentView === 'settings' && <SettingsView aiStatus={aiStatus} />}
+      </DashboardLayout>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onAuthSuccess={(user) => {
+          setCurrentUser(user);
+        }}
+      />
+    </>
   );
 }

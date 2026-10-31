@@ -3,8 +3,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models import Denouncement, Contributor, Project
+from app.models import Denouncement, Contributor, Project, User, Vouch
 from app.schemas import DenouncementOut, DenouncementCreate, DenouncementStatusUpdate
+from app.services.activity_logger import ActivityLogger
+from app.services.auth_service import optional_current_user
 
 router = APIRouter(prefix="/denouncements", tags=["denouncements"])
 
@@ -40,7 +42,11 @@ def list_denouncements(
     return results
 
 @router.post("", response_model=DenouncementOut, status_code=status.HTTP_201_CREATED)
-def submit_denouncement(data: DenouncementCreate, db: Session = Depends(get_db)):
+def submit_denouncement(
+    data: DenouncementCreate,
+    user: Optional[User] = Depends(optional_current_user),
+    db: Session = Depends(get_db)
+):
     project = db.query(Project).filter(Project.id == data.reporting_project_id).first()
     if not project:
         raise HTTPException(status_code=400, detail=f"Reporting project '{data.reporting_project_id}' does not exist")
@@ -83,6 +89,32 @@ def submit_denouncement(data: DenouncementCreate, db: Session = Depends(get_db))
     db.commit()
     db.refresh(denouncement)
 
+    submitter_name = user.name if user and user.name else "Not provided"
+    submitter_email = user.email if user else "Not provided"
+
+    ActivityLogger.log(
+        db=db,
+        event_type="DENOUNCEMENT_SUBMITTED",
+        event_description=f"Denouncement submitted for @{contrib.username} by {project.name}: {denouncement.reason}",
+        user=user,
+        resource_type="denouncement",
+        resource_id=denouncement.id,
+        project_name=project.name,
+        status="WARNING",
+        metadata={
+            "reported_contributor": contrib.username,
+            "reported_contributor_id": contrib.id,
+            "reporting_project_id": project.id,
+            "reporting_project_name": project.name,
+            "denouncement_reason": denouncement.reason,
+            "evidence_url": denouncement.evidence_url,
+            "details": denouncement.details,
+            "initial_status": denouncement.status,
+            "submitter_name": submitter_name,
+            "submitter_email": submitter_email
+        }
+    )
+
     return DenouncementOut(
         id=denouncement.id,
         contributor_id=contrib.id,
@@ -103,6 +135,7 @@ def submit_denouncement(data: DenouncementCreate, db: Session = Depends(get_db))
 def update_denouncement_status(
     denouncement_id: str,
     update_data: DenouncementStatusUpdate,
+    user: Optional[User] = Depends(optional_current_user),
     db: Session = Depends(get_db)
 ):
     d = db.query(Denouncement).filter(Denouncement.id == denouncement_id).first()
@@ -139,6 +172,21 @@ def update_denouncement_status(
 
     db.commit()
     db.refresh(d)
+
+    ActivityLogger.log(
+        db=db,
+        event_type="TRUST_POLICY_DECISION_RECORDED",
+        event_description=f"Maintainer triage status for denouncement {d.id} updated to '{update_data.status}'",
+        user=user,
+        resource_type="denouncement",
+        resource_id=d.id,
+        status="SUCCESS",
+        metadata={
+            "new_status": update_data.status,
+            "reviewed_by": update_data.reviewed_by or (user.name if user and user.name else "Maintainer"),
+            "review_notes": update_data.review_notes
+        }
+    )
 
     contrib = db.query(Contributor).filter(Contributor.id == d.contributor_id).first()
     proj = db.query(Project).filter(Project.id == d.reporting_project_id).first()

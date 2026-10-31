@@ -1,0 +1,19 @@
+{
+  "name": "SecurityMesh Gateway",
+  "slug": "securitymesh-gateway",
+  "description": "Zero-trust API proxy with dynamic provenance validation and rate limiting.",
+  "repo_url": "",
+  "category": "Cybersecurity",
+  "stars": 3450,
+  "trust_policy": {
+    "strictness": "high",
+    "min_confidence": 0.7,
+    "peer_weights": {
+      "proj-hyperflow": 1.0,
+      "proj-cryptomesh": 0.85
+    }
+  },
+  "id": "repo-security-mesh",
+  "created_at": "2026-10-31T16:57:21.899573",
+  "updated_at": "2026-10-31T16:57:21.899580"
+}

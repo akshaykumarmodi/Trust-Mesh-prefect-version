@@ -14,31 +14,40 @@ import {
   Clock,
   ExternalLink,
   ShieldAlert,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function OverviewView({ onNavigate }) {
   const [data, setData] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = async () => {
+    try {
+      const [overview, cmps] = await Promise.all([
+        api.getOverview(),
+        api.getCampaigns(),
+      ]);
+      setData(overview);
+      setCampaigns(cmps);
+    } catch (err) {
+      console.error('Failed to load overview:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [overview, cmps] = await Promise.all([
-          api.getOverview(),
-          api.getCampaigns(),
-        ]);
-        setData(overview);
-        setCampaigns(cmps);
-      } catch (err) {
-        console.error('Failed to load overview:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
+    setLoading(true);
     loadData();
   }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
 
   if (loading) {
     return (
@@ -69,7 +78,7 @@ export default function OverviewView({ onNavigate }) {
 
   return (
     <div className="space-y-8">
-      {/* Header with Title and Data Transparency Notice */}
+      {/* Header with Title, DEMO DATA notice and Refresh */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
@@ -80,9 +89,19 @@ export default function OverviewView({ onNavigate }) {
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-cyan-300">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          <span>{metrics.data_label || 'Synthetic Seed Demonstration Ecosystem'}</span>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] font-mono text-amber-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span>DEMO DATA (SYNTHETIC SEED ECOSYSTEM)</span>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-cyan-400 transition-colors"
+            title="Refresh metrics from backend"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-cyan-400' : ''}`} />
+          </button>
         </div>
       </div>
 
