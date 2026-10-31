@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/.venv/
+.venv/
+env/
+venv/
+*.db
+*.sqlite3
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build files
+dist/
+build/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
