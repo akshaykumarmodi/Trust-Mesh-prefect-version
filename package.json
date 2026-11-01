@@ -1,0 +1,16 @@
+{
+  "name": "trustmesh-workspace",
+  "version": "1.0.0",
+  "description": "TrustMesh — A Decentralized Trust Network Against AI Slop",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "lint": "npm --prefix frontend run lint",
+    "backend": "PYTHONPATH=backend ./backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
+    "test:backend": "PYTHONPATH=backend ./backend/.venv/bin/pytest backend/tests/ -v"
+  },
+  "author": "Nexora (Kartik Goyal, Akshay Kumar Modi, Avi Garg)",
+  "license": "Apache-2.0"
+}
