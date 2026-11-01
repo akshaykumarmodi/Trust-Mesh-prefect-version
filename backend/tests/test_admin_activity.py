@@ -348,12 +348,12 @@ def test_resend_mocked_success_delivery(client, db_session):
         assert notif.status == "SENT"
         assert notif.resend_id == "re_mock_abc12345"
         assert notif.sent_at is not None
-        assert notif.recipient == "akshay123modi@gmail.com"
+        assert notif.recipient == settings.ADMIN_NOTIFICATION_EMAIL
 
         # Verify method was called with correct parameters
         assert mock_send.called
         call_kwargs = mock_send.call_args[1]
-        assert call_kwargs["admin_email"] == "akshay123modi@gmail.com"
+        assert call_kwargs["admin_email"] == settings.ADMIN_NOTIFICATION_EMAIL
         assert call_kwargs["api_key"] == "re_test_mock_secret_key"
 
 def test_resend_mocked_error_handling_403(client, db_session):

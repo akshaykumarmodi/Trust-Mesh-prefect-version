@@ -1,67 +1,86 @@
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.database.session import get_db
-from app.models import Contributor, CoordinatedCampaign
-from app.schemas import AIExplainRequest, AIExplainResponse
-from app.services.ai_service import AIService
-from app.services.seed_data import seed_database
-from app.core.config import settings
 
-router = APIRouter(prefix="/ai", tags=["ai"])
+from app.schemas.ai import (
+    VouchAnalysisRequest,
+    VouchAnalysisResponse,
+    DenouncementAnalysisRequest,
+    DenouncementAnalysisResponse,
+    CampaignAnalysisRequest,
+    CampaignAnalysisResponse,
+    ContributorSummaryRequest,
+    ContributorSummaryResponse,
+    ExplainDecisionRequest,
+    ExplainDecisionResponse
+)
+from app.services.ai_service import ai_service, TrustMeshAIService
 
-@router.get("/status")
-def get_ai_status():
-    return {
-        "model_name": settings.AI_MODEL_NAME,
-        "is_live_configured": AIService.is_live_configured(),
-        "provider": "OpenRouter (GPT-OSS-120B Open-Weight)" if AIService.is_live_configured() else "Deterministic Intelligence Engine (Offline / Local)",
-        "mode": "Live Model Active" if AIService.is_live_configured() else "Deterministic Fallback Engine",
-        "description": "Evidence analysis and cross-repository pattern summarizer."
-    }
+router = APIRouter(prefix="/api/ai", tags=["AI Analysis Engine"])
 
-@router.post("/explain", response_model=AIExplainResponse)
-async def explain_target(request: AIExplainRequest, db: Session = Depends(get_db)):
-    target_data: Dict[str, Any] = {}
+def get_ai_service() -> TrustMeshAIService:
+    return ai_service
 
-    if request.target_type == "campaign":
-        campaign = db.query(CoordinatedCampaign).filter(
-            (CoordinatedCampaign.id == request.target_id) | (CoordinatedCampaign.campaign_code == request.target_id)
-        ).first()
-        if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
-        target_data = {
-            "id": campaign.id,
-            "campaign_code": campaign.campaign_code,
-            "name": campaign.name,
-            "pattern_type": campaign.pattern_type,
-            "signal_strength": campaign.signal_strength,
-            "affected_projects": campaign.affected_projects,
-            "contributor_ids": campaign.contributor_ids,
-            "evidence_records": campaign.evidence_records
-        }
-    elif request.target_type == "contributor":
-        contrib = db.query(Contributor).filter(
-            (Contributor.id == request.target_id) | (Contributor.username == request.target_id)
-        ).first()
-        if not contrib:
-            raise HTTPException(status_code=404, detail="Contributor not found")
-        
-        target_data = {
-            "id": contrib.id,
-            "username": contrib.username,
-            "reputation_state": contrib.reputation_state,
-            "total_contributions": contrib.total_contributions,
-            "vouches": [{"reason": v.reason, "evidence": v.evidence_url} for v in contrib.vouches],
-            "denouncements": [{"reason": d.reason, "evidence": d.evidence_url, "status": d.status} for d in contrib.denouncements]
-        }
-    else:
-        raise HTTPException(status_code=400, detail="Invalid target_type. Must be 'contributor' or 'campaign'")
+@router.get("/health", summary="AI Engine Health & Active Provider Status")
+def ai_health(service: TrustMeshAIService = Depends(get_ai_service)) -> Dict[str, Any]:
+    """
+    Returns AI service health, configured provider, active model, and fallback status.
+    Credentials and API keys are strictly masked to ensure security.
+    """
+    return service.get_health_status()
 
-    result = await AIService.explain_evidence(request.target_type, target_data)
-    return AIExplainResponse(**result)
+@router.post("/analyze-vouch", response_model=VouchAnalysisResponse, summary="Analyze Vouch Evidence")
+def analyze_vouch(
+    req: VouchAnalysisRequest,
+    service: TrustMeshAIService = Depends(get_ai_service)
+) -> VouchAnalysisResponse:
+    """
+    Evaluates peer vouch notes and cryptographic evidence.
+    Returns structured endorsement quality, verified items, and an investigation checklist.
+    Strictly advisory.
+    """
+    return service.analyze_vouch(req)
 
-@router.post("/reset-demo")
-def reset_demo_database(db: Session = Depends(get_db)):
-    seed_database(db, reset=True)
-    return {"status": "success", "message": "TrustMesh database successfully reset to clean synthetic demo state."}
+@router.post("/analyze-denouncement", response_model=DenouncementAnalysisResponse, summary="Analyze Denouncement Evidence")
+def analyze_denouncement(
+    req: DenouncementAnalysisRequest,
+    service: TrustMeshAIService = Depends(get_ai_service)
+) -> DenouncementAnalysisResponse:
+    """
+    Evaluates abuse allegations and submitted diff/incident evidence.
+    Strictly separates verified evidence from unverified claims.
+    Never declares automated bans or guilt.
+    """
+    return service.analyze_denouncement(req)
+
+@router.post("/analyze-campaign", response_model=CampaignAnalysisResponse, summary="Analyze Coordinated Activity Cluster")
+def analyze_campaign(
+    req: CampaignAnalysisRequest,
+    service: TrustMeshAIService = Depends(get_ai_service)
+) -> CampaignAnalysisResponse:
+    """
+    Analyzes cross-repository bursts and template similarity indicators.
+    Clarifies correlation vs conclusive human/AI proof.
+    """
+    return service.analyze_campaign(req)
+
+@router.post("/contributor-summary", response_model=ContributorSummaryResponse, summary="Summarize Contributor Trust History")
+def summarize_contributor(
+    req: ContributorSummaryRequest,
+    service: TrustMeshAIService = Depends(get_ai_service)
+) -> ContributorSummaryResponse:
+    """
+    Generates a concise reputation digest.
+    Guarantees newcomer neutrality for contributors without prior history.
+    """
+    return service.summarize_contributor(req)
+
+@router.post("/explain-decision", response_model=ExplainDecisionResponse, summary="Explain Deterministic Trust Decision")
+def explain_decision(
+    req: ExplainDecisionRequest,
+    service: TrustMeshAIService = Depends(get_ai_service)
+) -> ExplainDecisionResponse:
+    """
+    Explains the mathematical scoring and repository trust tier in plain English.
+    Confirms newcomer fairness application and active policy weights.
+    """
+    return service.explain_decision(req)

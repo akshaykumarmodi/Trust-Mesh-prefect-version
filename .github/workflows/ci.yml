@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - feat/trustmesh-core-platform
-      - feat/trustmesh-integrations
       - feat/trustmesh-ai
   pull_request:
 
@@ -29,13 +28,6 @@ jobs:
           cache: "pip"
           cache-dependency-path: backend/requirements.txt
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
@@ -47,20 +39,35 @@ jobs:
           DATABASE_URL: "sqlite:///:memory:"
           JWT_SECRET: "ci_test_jwt_secret_token_2026"
           ADMIN_SECRET_KEY: "ci_test_admin_secret_key_2026"
-          ADMIN_NOTIFICATION_EMAIL: "akshay123modi@gmail.com"
+          ADMIN_NOTIFICATION_EMAIL: "ci-admin@example.com"
           EMAIL_FROM: "TrustMesh Alerts <onboarding@resend.dev>"
           RESEND_API_KEY: ""
+          AI_ENABLED: "true"
+          AI_PROVIDER: "groq"
+          AI_MODEL_NAME: "openai/gpt-oss-120b"
+          GROQ_API_KEY: ""
         run: |
           pytest backend/tests/ -v
 
+      - name: Set up Node.js
+        if: hashFiles('frontend/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
       - name: Install frontend dependencies
+        if: hashFiles('frontend/package.json') != ''
         run: |
           npm --prefix frontend ci
 
       - name: Run frontend lint
+        if: hashFiles('frontend/package.json') != ''
         run: |
           npm --prefix frontend run lint
 
       - name: Run frontend production build
+        if: hashFiles('frontend/package.json') != ''
         run: |
           npm --prefix frontend run build

@@ -84,10 +84,19 @@ app.include_router(network_router, prefix=settings.API_V1_STR)
 app.include_router(campaigns_router, prefix=settings.API_V1_STR)
 app.include_router(evidence_router, prefix=settings.API_V1_STR)
 app.include_router(federation_router, prefix=settings.API_V1_STR)
-app.include_router(ai_router, prefix=settings.API_V1_STR)
+app.include_router(ai_router) # already has prefix="/api/ai"
 app.include_router(github_router, prefix=settings.API_V1_STR)
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
+
+@app.get("/health", tags=["System"])
+def root_health():
+    return {
+        "status": "online",
+        "service": "trustmesh-ai",
+        "version": "1.0.0",
+        "tagline": "Trust should travel. Evidence should speak."
+    }
 
 @app.get("/api/health", tags=["system"])
 def health_check():
