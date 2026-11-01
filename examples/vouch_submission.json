@@ -1,0 +1,8 @@
+{
+  "contributor_username": "elena-rustacean",
+  "source_project_id": "proj-hyperflow",
+  "reason": "Authored zero-copy memory allocator optimization in pull request #342",
+  "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/342",
+  "context": "Core memory engine optimization with 99.8% test coverage and formal proof review",
+  "confidence": 0.95
+}
