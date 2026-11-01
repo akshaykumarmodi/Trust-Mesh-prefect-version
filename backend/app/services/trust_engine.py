@@ -27,7 +27,7 @@ class TrustEvaluationEngine:
         viewing_project = None
         if viewing_project_id:
             viewing_project = db.query(Project).filter(Project.id == viewing_project_id).first()
-        
+
         # If no viewing project specified, pick the first project or use default balanced policy
         if not viewing_project:
             viewing_project = db.query(Project).first()
@@ -37,17 +37,17 @@ class TrustEvaluationEngine:
                 viewing_project_id = "default"
 
         viewing_project_name = viewing_project.name if viewing_project else "Global Default Policy"
-        
+
         # Load project-specific trust edges (weights assigned by viewing project to other projects)
         peer_trust_weights: Dict[str, float] = {}
         if viewing_project:
             edges = db.query(ProjectTrustEdge).filter(ProjectTrustEdge.source_project_id == viewing_project.id).all()
             for edge in edges:
                 peer_trust_weights[edge.target_project_id] = edge.trust_weight
-            
+
             # Self-trust is 1.0
             peer_trust_weights[viewing_project.id] = 1.0
-            
+
             # Merge with policy JSON if present
             policy_dict = viewing_project.trust_policy
             if "peer_weights" in policy_dict and isinstance(policy_dict["peer_weights"], dict):
@@ -58,11 +58,11 @@ class TrustEvaluationEngine:
         vouches = db.query(Vouch).filter(Vouch.contributor_id == contributor_id).all()
         # Retrieve all denouncements for this contributor
         denouncements = db.query(Denouncement).filter(Denouncement.contributor_id == contributor_id).all()
-        
+
         # Retrieve campaign memberships
         all_campaigns = db.query(CoordinatedCampaign).all()
         contributor_campaigns = [
-            c for c in all_campaigns 
+            c for c in all_campaigns
             if contributor_id in c.contributor_ids or contributor.username in c.contributor_ids
         ]
 
@@ -82,11 +82,11 @@ class TrustEvaluationEngine:
         for v in vouches:
             src_proj = db.query(Project).filter(Project.id == v.source_project_id).first()
             src_name = src_proj.name if src_proj else v.source_project_id
-            
+
             # Weight assigned by viewing project to source project
             # Default to 0.7 for known peer projects if not explicitly defined, or 1.0 if self
             weight = peer_trust_weights.get(v.source_project_id, 0.7 if v.source_project_id != viewing_project_id else 1.0)
-            
+
             signal = SignalDetail(
                 source=f"Vouch by {src_name}",
                 type="VOUCH",
@@ -107,13 +107,56 @@ class TrustEvaluationEngine:
             else:
                 signals_discounted.append(signal)
 
+        # --- Process Verified GitHub Pull Requests ---
+        from app.models import GitHubPullRequest
+        verified_gh_pulls = db.query(GitHubPullRequest).filter(
+            (GitHubPullRequest.author_username == contributor.username) &
+            (GitHubPullRequest.verification_status == "Verified GitHub record")
+        ).all()
+
+        for gh in verified_gh_pulls:
+            src_proj = db.query(Project).filter(Project.id == gh.project_id).first()
+            src_name = src_proj.name if src_proj else gh.project_id
+            weight = peer_trust_weights.get(gh.project_id, 0.7 if gh.project_id != viewing_project_id else 1.0)
+
+            # Merged pull requests provide strong verifiable evidence
+            if gh.is_merged:
+                val = 0.85 * weight
+                effective_vouch_weight += val
+                signals_considered.append(SignalDetail(
+                    source=f"Verified GitHub PR #{gh.pr_number} in {src_name}",
+                    type="VOUCH",
+                    source_project_id=gh.project_id,
+                    source_project_name=src_name,
+                    reason=f"Merged PR #{gh.pr_number}: {gh.title}",
+                    evidence_url=gh.html_url,
+                    peer_trust_weight_applied=weight,
+                    raw_confidence=0.85,
+                    discount_reason=None if weight > 0 else f"Repository {src_name} has zero weight in viewing project policy",
+                    status="Merged"
+                ))
+            else:
+                # Open or closed PRs provide context without negative penalty
+                signals_considered.append(SignalDetail(
+                    source=f"Verified GitHub PR #{gh.pr_number} in {src_name}",
+                    type="VOUCH",
+                    source_project_id=gh.project_id,
+                    source_project_name=src_name,
+                    reason=f"PR #{gh.pr_number}: {gh.title} ({gh.state})",
+                    evidence_url=gh.html_url,
+                    peer_trust_weight_applied=weight * 0.3,
+                    raw_confidence=0.50,
+                    discount_reason="Non-merged PR (informational activity)",
+                    status=gh.state.capitalize()
+                ))
+
         # --- Process Denouncements ---
         for d in denouncements:
             rep_proj = db.query(Project).filter(Project.id == d.reporting_project_id).first()
             rep_name = rep_proj.name if rep_proj else d.reporting_project_id
-            
+
             weight = peer_trust_weights.get(d.reporting_project_id, 0.7 if d.reporting_project_id != viewing_project_id else 1.0)
-            
+
             # Crucial Fairness Principle:
             # Allegations are not facts. Denouncements that are 'Dismissed' are not counted.
             # 'Pending Review' denouncements receive a discounted weight (0.35 * weight) to prevent smear campaigns.
@@ -176,7 +219,7 @@ class TrustEvaluationEngine:
         newcomer_fairness_applied = False
         conflicting_signals_detected = False
 
-        total_signals = len(vouches) + len(denouncements) + len(contributor_campaigns)
+        total_signals = len(vouches) + len(denouncements) + len(contributor_campaigns) + len(verified_gh_pulls)
 
         has_vouch_evidence = effective_vouch_weight >= 0.3
         has_active_reports = effective_denounce_weight >= 0.2 or any(d.status in ["Pending Review", "Under Investigation", "Reviewed"] for d in denouncements)

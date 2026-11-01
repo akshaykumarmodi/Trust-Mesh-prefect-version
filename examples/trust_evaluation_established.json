@@ -1,0 +1,57 @@
+{
+  "contributor_id": "contrib-elena",
+  "username": "elena-rustacean",
+  "viewing_project_id": "proj-hyperflow",
+  "viewing_project_name": "HyperFlow Engine",
+  "reputation_state": "ESTABLISHED",
+  "trust_confidence": 0.98,
+  "effective_vouch_weight": 2.95,
+  "effective_denounce_weight": 0.0,
+  "conflicting_signals_detected": false,
+  "newcomer_fairness_applied": false,
+  "summary_explanation": "elena-rustacean has verified positive contributions corroborated across multiple projects. High confidence peer vouches with attached evidence.",
+  "signals_considered": [
+    {
+      "source": "Vouch by HyperFlow Engine",
+      "type": "VOUCH",
+      "source_project_id": "proj-hyperflow",
+      "source_project_name": "HyperFlow Engine",
+      "reason": "Authored high-throughput zero-copy ring buffer PR that improved async throughput by 42%.",
+      "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/412",
+      "peer_trust_weight_applied": 1.0,
+      "raw_confidence": 1.0,
+      "discount_reason": null,
+      "status": "Active"
+    },
+    {
+      "source": "Vouch by CloudNative Router",
+      "type": "VOUCH",
+      "source_project_id": "proj-cloudnative",
+      "source_project_name": "CloudNative Router",
+      "reason": "Contributed eBPF kernel packet filter telemetry driver with zero regressions.",
+      "evidence_url": "https://github.com/cloudnative/router/pull/188",
+      "peer_trust_weight_applied": 1.0,
+      "raw_confidence": 1.0,
+      "discount_reason": null,
+      "status": "Active"
+    },
+    {
+      "source": "Vouch by HyperFlow Engine",
+      "type": "VOUCH",
+      "source_project_id": "proj-hyperflow",
+      "source_project_name": "HyperFlow Engine",
+      "reason": "Authored zero-copy memory allocator optimization in pull request #342",
+      "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/342",
+      "peer_trust_weight_applied": 1.0,
+      "raw_confidence": 0.95,
+      "discount_reason": null,
+      "status": "Active"
+    }
+  ],
+  "signals_discounted": [],
+  "missing_evidence_hints": [],
+  "applied_policy_rules": [
+    "Evaluated from perspective of 'HyperFlow Engine' (ID: proj-hyperflow)",
+    "Peer Endorsement Rule: Contributor has 3 positive vouches from trusted ecosystem peers."
+  ]
+}

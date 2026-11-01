@@ -1,0 +1,22 @@
+{
+  "contributor_id": "contrib-marcus",
+  "username": "marcus-dev",
+  "viewing_project_id": "proj-hyperflow",
+  "viewing_project_name": "HyperFlow Engine",
+  "reputation_state": "NEWCOMER",
+  "trust_confidence": 0.5,
+  "effective_vouch_weight": 0.0,
+  "effective_denounce_weight": 0.0,
+  "conflicting_signals_detected": false,
+  "newcomer_fairness_applied": true,
+  "summary_explanation": "marcus-dev is a new contributor with no prior history on TrustMesh. Following the core TrustMesh fairness principle, lack of reputation history is never treated as suspicious. Maintainers are encouraged to review pull requests based on code quality and standard tests.",
+  "signals_considered": [],
+  "signals_discounted": [],
+  "missing_evidence_hints": [
+    "No vouches recorded yet. Welcoming first-time contribution review recommended."
+  ],
+  "applied_policy_rules": [
+    "Evaluated from perspective of 'HyperFlow Engine' (ID: proj-hyperflow)",
+    "Newcomer Fairness Rule applied: Contributor has zero records. Neutral baseline (0.50) assigned."
+  ]
+}

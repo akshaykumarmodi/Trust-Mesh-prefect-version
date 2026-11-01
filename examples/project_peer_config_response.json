@@ -1,0 +1,17 @@
+{
+  "detail": [
+    {
+      "type": "missing",
+      "loc": [
+        "body",
+        "target_project_id"
+      ],
+      "msg": "Field required",
+      "input": {
+        "peer_project_id": "proj-devpulse",
+        "trust_weight": 0.85,
+        "notes": "High reliability developer tooling maintainers with verified cryptographic audits"
+      }
+    }
+  ]
+}

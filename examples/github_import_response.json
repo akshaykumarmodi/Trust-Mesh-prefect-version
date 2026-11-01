@@ -1,0 +1,23 @@
+{
+  "id": "proj-react",
+  "name": "react",
+  "slug": "react",
+  "description": "The library for web and native user interfaces.",
+  "repo_url": "https://github.com/facebook/react",
+  "category": "Developer Tools",
+  "stars": 232000,
+  "is_github_connected": true,
+  "github_owner": "facebook",
+  "github_repo": "react",
+  "default_branch": "main",
+  "visibility": "public",
+  "github_created_at": "2013-05-24T16:15:54Z",
+  "github_updated_at": "2026-10-31T20:10:00Z",
+  "last_synced_at": "2026-10-31T22:30:00Z",
+  "sync_status": "synced",
+  "trust_policy": {
+    "strictness": "balanced",
+    "min_confidence": 0.6,
+    "peer_weights": {}
+  }
+}

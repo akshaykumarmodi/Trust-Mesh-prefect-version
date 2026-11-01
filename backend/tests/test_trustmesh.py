@@ -8,33 +8,6 @@ from app.main import app
 from app.services.seed_data import seed_database
 from app.services.trust_engine import TrustEvaluationEngine
 
-# Setup in-memory test database with StaticPool so all connections share the memory DB
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_test_db():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    seed_database(db, reset=True)
-    db.close()
-    yield
-    Base.metadata.drop_all(bind=engine)
-
 client = TestClient(app)
 
 def test_health_check():
@@ -133,7 +106,7 @@ def test_submit_denouncement_fairness():
     assert response.status_code == 201
     data = response.json()
     assert data["status"] == "Pending Review"
-    
+
     # Test triage status update
     update_res = client.patch(
         f"/api/denouncements/{data['id']}/status",
@@ -169,3 +142,61 @@ def test_federation_export_and_import():
     import_res = client.post("/api/federation/import", json=bundle)
     assert import_res.status_code == 200
     assert import_res.json()["status"] == "success"
+
+def test_create_contributor_and_newcomer_baseline():
+    """
+    Test manual contributor registration.
+    Must start in NEWCOMER state with neutral trust confidence (0.50).
+    """
+    payload = {
+        "username": "janedoe-dev",
+        "display_name": "Jane Doe",
+        "bio": "Systems programmer interested in eBPF drivers.",
+        "skills": ["Rust", "eBPF", "C"],
+        "avatar_url": "https://github.com/janedoe-dev.png"
+    }
+    res = client.post("/api/contributors", json=payload)
+    assert res.status_code == 201
+    data = res.json()
+    assert data["username"] == "janedoe-dev"
+    assert data["reputation_state"] == "NEWCOMER"
+
+    # Evaluate new contributor
+    eval_res = client.get(f"/api/trust/evaluate?contributor_id={data['id']}")
+    assert eval_res.status_code == 200
+    eval_data = eval_res.json()
+    assert eval_data["reputation_state"] == "NEWCOMER"
+    assert eval_data["trust_confidence"] == 0.50
+    assert eval_data["newcomer_fairness_applied"] is True
+
+def test_project_peer_weight_configuration_and_relationships():
+    """
+    Test setting custom peer weight on a project and retrieving incoming/outgoing relationships.
+    """
+    peer_payload = {
+        "target_project_id": "proj-devpulse",
+        "trust_weight": 0.95,
+        "notes": "Verified high-quality peer review practices"
+    }
+    res = client.post("/api/projects/proj-hyperflow/peers", json=peer_payload)
+    assert res.status_code == 200
+    assert res.json()["status"] == "success"
+
+    # Verify relationships endpoint reflects the update
+    rel_res = client.get("/api/projects/proj-hyperflow/relationships")
+    assert rel_res.status_code == 200
+    rel_data = rel_res.json()
+    assert rel_data["project_name"] == "HyperFlow Engine"
+    peer_ids = [p["project_id"] for p in rel_data["outgoing_peers"]]
+    assert "proj-devpulse" in peer_ids
+
+def test_dynamic_campaign_scan():
+    """
+    Test running the deterministic campaign detection scan on current signals.
+    """
+    res = client.post("/api/campaigns/scan")
+    assert res.status_code == 200
+    scan_data = res.json()
+    assert scan_data["status"] == "success"
+    assert "reports_analyzed" in scan_data
+    assert "algorithm" in scan_data

@@ -15,8 +15,10 @@ import {
   X,
   ExternalLink,
   Cpu,
-  Sparkles,
   ArrowUpRight,
+  Activity,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -24,6 +26,9 @@ export default function DashboardLayout({
   onNavigate,
   onOpenLanding,
   aiStatus,
+  currentUser,
+  onOpenAuth,
+  onLogout,
   children,
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -38,6 +43,7 @@ export default function DashboardLayout({
     { id: 'denouncements', label: 'Denouncements', icon: AlertTriangle },
     { id: 'campaigns', label: 'Campaign Detection', icon: Flame },
     { id: 'evidence', label: 'Evidence Center', icon: FileText },
+    { id: 'admin', label: 'Admin Monitoring', icon: Activity, badge: 'ADMIN' },
     { id: 'settings', label: 'Settings & Federation', icon: Settings },
   ];
 
@@ -121,7 +127,16 @@ export default function DashboardLayout({
                 title={collapsed ? item.label : undefined}
               >
                 <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                {!collapsed && (
+                  <div className="flex items-center justify-between flex-1 truncate">
+                    <span className="truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                )}
               </button>
             );
           })}
@@ -178,11 +193,37 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="font-mono">5 Repos Federated</span>
-            </div>
+          <div className="flex items-center gap-3">
+            {currentUser ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-white font-medium max-w-[140px] truncate">
+                    {currentUser.name || currentUser.email}
+                  </span>
+                  {currentUser.is_admin && (
+                    <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[9px] border border-cyan-500/30">
+                      ADMIN
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center gap-1.5"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Sign In / Admin</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenLanding}

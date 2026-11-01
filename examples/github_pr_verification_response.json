@@ -1,0 +1,18 @@
+{
+  "verified": true,
+  "verification_status": "VERIFIED_GITHUB",
+  "project_id": "proj-hyperflow",
+  "pr_number": 104,
+  "canonical_url": "https://github.com/hyperflow-runtime/hyperflow/pull/104",
+  "verification_details": {
+    "source": "api.github.com",
+    "verified_at": "2026-10-31T22:30:00Z",
+    "repo_owner": "hyperflow-runtime",
+    "repo_name": "hyperflow",
+    "pr_number": 104,
+    "state": "closed",
+    "is_merged": true,
+    "commits": 4,
+    "author": "elena-rostova"
+  }
+}

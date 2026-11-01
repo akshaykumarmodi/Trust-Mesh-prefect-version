@@ -1,6 +1,6 @@
 # TrustMesh — Decentralized Trust Network Against AI Slop
 
-> **"Trust should travel. Evidence should speak."**  
+> **"Trust should travel. Evidence should speak."**
 > *A new contributor is not automatically suspicious. An allegation is not proof. A trust score must always be explainable.*
 
 [![Problem 07](https://img.shields.io/badge/Problem%2007-A%20Trust%20Network%20Against%20AI%20Slop-06b6d4.svg)](#)
@@ -8,7 +8,7 @@
 [![Python 3.13+](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python-emerald.svg)](#)
 [![React 19](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20React%20Flow-8b5cf6.svg)](#)
 [![AI Architecture](https://img.shields.io/badge/AI%20Model-GPT--OSS--120B%20(Open--Weight)-f59e0b.svg)](#)
-[![Tests Passing](https://img.shields.io/badge/Tests-11%2F11%20Passed%20(100%25)-10b981.svg)](#)
+[![Tests Passing](https://img.shields.io/badge/Tests-26%2F26%20Passed%20(100%25)-10b981.svg)](#)
 
 ---
 
@@ -38,7 +38,7 @@ Instead of requiring projects to blindly trust each other or an arbitrary scorin
 - **Akshay Kumar Modi**
 - **Avi Garg**
 
-**Selected Track**: Problem 07 — *A Trust Network Against AI Slop*  
+**Selected Track**: Problem 07 — *A Trust Network Against AI Slop*
 **Hackathon Event**: Hacktoberfest 2026
 
 ---
@@ -73,7 +73,7 @@ Instead of requiring projects to blindly trust each other or an arbitrary scorin
 ```
 
 ### AI Model Integration: GPT-OSS-120B
-- **Open-Weight Architecture**: TrustMesh utilizes **GPT-OSS-120B**, an open-weight model released under the Apache 2.0 license, via OpenRouter or local endpoints.
+- **Open-Weight Architecture**: TrustMesh integrates **GPT-OSS-120B**, an open-weight model released under the Apache 2.0 license, via OpenRouter or local endpoints.
 - **Role of AI**: AI is strictly used for **summarizing evidence diffs** and explaining coordinated multi-repository patterns to human maintainers.
 - **Deterministic Independence**: All trust scores, reputation states, and policy weights are calculated deterministically by the Python engine.
 - **Graceful Offline Mode**: When an API key is not configured, the platform seamlessly runs with the **Deterministic Intelligence Engine** with clear UI status badges.
@@ -97,17 +97,26 @@ Instead of requiring projects to blindly trust each other or an arbitrary scorin
   - `INSUFFICIENT EVIDENCE`: Emerging profile requiring further corroboration.
 
 ### 3. Coordinated Campaign Detection (AI Slop Radar)
-- Deterministic pattern engine flags synchronized burst PRs across repos.
-- Includes pre-seeded campaign **`CMP-2026-AI-SLOP-CLUSTER-A`** ("Automated Docstring & Typo-Fix AI Slop Wave") demonstrating multi-repo template matching and commit diff forensics.
+- Deterministic pattern engine flags synchronized burst PRs across repos using token Jaccard similarity and temporal correlation.
+- Interactive "Run Forensic Scan" button dynamically detects clusters across decentralized activity logs.
+- Maintainer triage status workflow: `Active Investigation` -> `Confirmed Coordinated Abuse` / `Dismissed`.
 
-### 4. Functional Vouch & Denouncement Systems
+### 4. Functional Contributor & Project Management
+- Register new projects and tune subjective peer trust weights and rules.
+- View incoming and outgoing trust peering relationships per project.
+- Register contributor identities, search and filter by reputation state, and inspect verified project participation timelines.
+
+### 5. Functional Vouch & Denouncement Systems
 - Working submission forms with real-time client & server validation.
 - Every vouch calculates a SHA-256 provenance hash.
 - Every report starts as `Pending Review` with an inline triage workflow for maintainers to investigate or dismiss false allegations.
 
-### 5. Cross-Network Federation
-- Export signed repository trust bundles as standardized JSON envelopes (`/api/federation/export/{id}`).
-- Import external bundles to dynamically integrate peer trust signals (`/api/federation/import`).
+### 7. Real GitHub Repository & PR Authenticity Integration
+- **Direct Public URL Import**: Enter any public GitHub repository URL (`https://github.com/owner/repo`). Validates syntax, queries the GitHub REST API v3, extracts owner, repository, description, default branch, visibility, and timestamps.
+- **Pull Request Synchronization**: Fetches real PRs with full metadata (numbers, titles, bodies, authors, branches, commits, review states, merge flags).
+- **PR Authenticity Verification Service**: Verifies repository existence, PR existence, owner/repo binding, and canonical URL match. Returns explicit statuses: `Verified GitHub record` (`VERIFIED_GITHUB`), `Unable to verify` (`UNABLE_TO_VERIFY`), or `Verification unavailable` (`VERIFICATION_UNAVAILABLE`).
+- **Fairness & Security Principle**: Authenticity verification strictly establishes whether code/PR provenance exists on GitHub — it is never confused with contributor trustworthiness. Zero client token exposure: all tokens/OAuth secrets remain securely on backend.
+- **Webhook Architecture**: Implements HMAC-SHA256 signature verification (`X-Hub-Signature-256`) to handle real-time `pull_request` lifecycle events.
 
 ---
 
@@ -117,41 +126,25 @@ Instead of requiring projects to blindly trust each other or an arbitrary scorin
 - **Node.js** (v18+ or v20+)
 - **Python** (3.11, 3.12, or 3.13)
 
-### Backend Setup
+### Running Everything with Root Scripts
 
+From the repository root:
 ```bash
-# 1. Navigate to repository root
-cd /path/to/TrustMesh
-
-# 2. Activate virtual environment (or create one)
+# 1. Setup backend Python venv
 python3 -m venv backend/.venv
-source backend/.venv/bin/activate
+./backend/.venv/bin/pip install -r backend/requirements.txt
 
-# 3. Install dependencies
-pip install -r backend/requirements.txt
+# 2. Run backend test suite (26 tests)
+PYTHONPATH=backend ./backend/.venv/bin/pytest backend/tests/ -v
 
-# 4. Run automated test suite
-PYTHONPATH=backend pytest backend/tests/ -v
+# 3. Start backend daemon (Port 8000)
+PYTHONPATH=backend ./backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 
-# 5. Start the FastAPI server (Port 8000)
-PYTHONPATH=backend uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-The backend automatically creates `trustmesh.db` and seeds rich synthetic demo data on first launch.
-
-### Frontend Setup
-
-```bash
-# 1. Navigate to frontend directory
-cd frontend
-
-# 2. Install npm dependencies
+# 4. In a separate terminal, install and run frontend dev server (Port 5173)
 npm install
+npm run dev
 
-# 3. Start Vite dev server (Port 5173 with automatic backend proxy)
-npm run dev -- --host 127.0.0.1 --port 5173
-
-# 4. Production build check
+# 5. Build for production verification
 npm run build
 ```
 
@@ -167,8 +160,14 @@ When the backend is running, interactive Swagger/OpenAPI documentation is availa
 |---|---|---|
 | `GET` | `/api/health` | Service health, team identity, and version info |
 | `GET` | `/api/projects` | List all federated repositories with policies |
+| `POST` | `/api/projects` | Register a new repository with custom trust policy |
 | `PATCH` | `/api/projects/{id}` | Tune project trust policy and peer weights |
+| `POST` | `/api/projects/{id}/peers` | Configure subjective peer trust weight and audit notes |
+| `GET` | `/api/projects/{id}/relationships` | Inspect incoming and outgoing trust peering edges |
 | `GET` | `/api/contributors` | List contributors with search and state filtering |
+| `POST` | `/api/contributors` | Register a new contributor identity |
+| `GET` | `/api/contributors/{id}` | Detailed contributor profile with vouches and reports |
+| `GET` | `/api/contributors/{id}/activity` | Contributor project participation and trust timeline (includes verified PRs) |
 | `GET` | `/api/trust/evaluate` | Evaluate contributor from a specific project perspective |
 | `GET` | `/api/trust/overview` | Platform metrics, activity stream, and distribution |
 | `GET` | `/api/network` | Node and edge topology formatted for React Flow |
@@ -178,18 +177,59 @@ When the backend is running, interactive Swagger/OpenAPI documentation is availa
 | `POST` | `/api/denouncements` | Submit a report (starts in 'Pending Review') |
 | `PATCH` | `/api/denouncements/{id}/status` | Maintainer triage (Review / Dismiss) |
 | `GET` | `/api/campaigns` | Coordinated AI slop and sybil campaign radar |
-| `GET` | `/api/evidence` | Cross-repository evidence records |
+| `POST` | `/api/campaigns/scan` | Trigger real-time deterministic cross-repo pattern scanner |
+| `PATCH` | `/api/campaigns/{id}/status` | Update campaign human review triage status |
+| `GET` | `/api/evidence` | Cross-repository evidence records (includes verified GitHub PRs) |
 | `GET` | `/api/federation/export/{id}` | Export signed project trust bundle |
 | `POST` | `/api/federation/import` | Import external federation bundle |
 | `POST` | `/api/ai/explain` | Evidence summarization via GPT-OSS-120B |
+| `GET` | `/api/ai/status` | Check AI model connectivity and fallback status |
 | `POST` | `/api/ai/reset-demo` | Reset database back to clean synthetic seed state |
+| `GET` | `/api/github/status` | GitHub integration and OAuth status |
+| `GET` | `/api/github/oauth/authorize` | GitHub OAuth authorization initiation |
+| `GET` | `/api/github/oauth/callback` | GitHub OAuth callback (backend credential isolation) |
+| `POST` | `/api/github/import-repo` | Import public GitHub repository & sync pull requests |
+| `GET` | `/api/github/projects/{id}/pulls` | Fetch imported pull requests with authenticity status |
+| `POST` | `/api/github/projects/{id}/sync` | Manually re-synchronize pull requests from GitHub API |
+| `POST` | `/api/github/verify-pr` | Verify PR authenticity against GitHub canonical records |
+| `POST` | `/api/github/webhook` | Webhook receiver with HMAC-SHA256 signature verification |
 
 ---
 
-## 7. Automated Test Suite Results
+## 7. Sample Inputs and Outputs (`examples/`)
 
-All 11 tests pass with 100% coverage across core modules:
+Representative requests and real responses are provided in [`examples/`](file:///Users/akshaykumarmodi/TrustMesh/examples):
+- [`github_import_request.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/github_import_request.json) & [`github_import_response.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/github_import_response.json)
+- [`github_pr_verification_request.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/github_pr_verification_request.json) & [`github_pr_verification_response.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/github_pr_verification_response.json)
+- [`github_webhook_payload.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/github_webhook_payload.json)
+- [`vouch_submission.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/vouch_submission.json) & [`vouch_response.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/vouch_response.json)
+- [`denouncement_submission.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/denouncement_submission.json) & [`denouncement_response.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/denouncement_response.json)
+- [`trust_evaluation_newcomer.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/trust_evaluation_newcomer.json)
+- [`trust_evaluation_established.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/trust_evaluation_established.json)
+- [`trust_evaluation_conflicting.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/trust_evaluation_conflicting.json)
+- [`project_registration.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/project_registration.json) & [`project_registration_response.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/project_registration_response.json)
+- [`project_peer_config.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/project_peer_config.json) & [`project_peer_config_response.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/project_peer_config_response.json)
+- [`campaign_scan_output.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/campaign_scan_output.json)
+- [`federation_bundle.json`](file:///Users/akshaykumarmodi/TrustMesh/examples/federation_bundle.json)
+
+---
+
+## 8. Automated Test Suite Results
+
+All 26 tests pass with 100% coverage across core modules:
 ```
+backend/tests/test_github_integration.py::test_parse_github_url_valid PASSED
+backend/tests/test_github_integration.py::test_parse_github_url_invalid PASSED
+backend/tests/test_github_integration.py::test_import_public_repository_success PASSED
+backend/tests/test_github_integration.py::test_import_duplicate_repository_prevention PASSED
+backend/tests/test_github_integration.py::test_import_repository_not_found_404 PASSED
+backend/tests/test_github_integration.py::test_import_repository_rate_limit_403 PASSED
+backend/tests/test_github_integration.py::test_verify_pull_request_authenticity_valid PASSED
+backend/tests/test_github_integration.py::test_verify_pull_request_authenticity_mismatch PASSED
+backend/tests/test_github_integration.py::test_verify_pull_request_nonexistent_404 PASSED
+backend/tests/test_github_integration.py::test_webhook_signature_verification PASSED
+backend/tests/test_github_integration.py::test_webhook_pull_request_event PASSED
+backend/tests/test_github_integration.py::test_imported_pr_in_contributor_activity PASSED
 backend/tests/test_trustmesh.py::test_health_check PASSED
 backend/tests/test_trustmesh.py::test_list_projects PASSED
 backend/tests/test_trustmesh.py::test_newcomer_fairness PASSED
@@ -201,13 +241,16 @@ backend/tests/test_trustmesh.py::test_submit_denouncement_fairness PASSED
 backend/tests/test_trustmesh.py::test_network_graph PASSED
 backend/tests/test_trustmesh.py::test_coordinated_campaigns PASSED
 backend/tests/test_trustmesh.py::test_federation_export_and_import PASSED
+backend/tests/test_trustmesh.py::test_create_contributor_and_newcomer_baseline PASSED
+backend/tests/test_trustmesh.py::test_project_peer_weight_configuration_and_relationships PASSED
+backend/tests/test_trustmesh.py::test_dynamic_campaign_scan PASSED
 
-======================== 11 passed in 0.61s =========================
+======================== 26 passed in 0.35s =========================
 ```
 
 ---
 
-## 8. License
+## 9. License
 
-Licensed under the [Apache License, Version 2.0](LICENSE).  
+Licensed under the [Apache License, Version 2.0](LICENSE).
 Copyright (c) 2026 Team Nexora (Kartik Goyal, Akshay Kumar Modi, Avi Garg).

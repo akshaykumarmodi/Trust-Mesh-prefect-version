@@ -1,0 +1,7 @@
+{
+  "contributor_username": "slop-bot-99",
+  "reporting_project_id": "proj-hyperflow",
+  "reason": "Templated AI docstring churn PR submitted without semantic logic",
+  "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/991",
+  "details": "Automated LLM docstring modification that introduced invalid typings across 4 files"
+}

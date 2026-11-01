@@ -19,6 +19,8 @@ export default function CampaignsView() {
   const [campaigns, setCampaigns] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [aiExplanations, setAiExplanations] = useState({});
   const [aiLoading, setAiLoading] = useState({});
@@ -46,6 +48,39 @@ export default function CampaignsView() {
     loadData();
   }, []);
 
+  const handleRunScan = async () => {
+    try {
+      setScanning(true);
+      setScanMessage(null);
+      const res = await api.scanCampaigns();
+      setScanMessage(
+        res.message ||
+          `Deterministic scan complete: ${res.campaigns_detected || 0} coordinated clusters identified across ${res.events_evaluated || 0} events.`
+      );
+      await loadData();
+    } catch (err) {
+      console.error('Failed to run campaign scan:', err);
+      setScanMessage('Failed to run scanner: ' + err.message);
+    } finally {
+      setScanning(false);
+      setTimeout(() => setScanMessage(null), 6000);
+    }
+  };
+
+  const handleUpdateStatus = async (campaignId, newStatus) => {
+    try {
+      await api.updateCampaignStatus(campaignId, newStatus);
+      // Update local state
+      setCampaigns((prev) =>
+        prev.map((c) => (c.id === campaignId ? { ...c, status: newStatus } : c))
+      );
+      const anl = await api.getCampaignAnalytics();
+      setAnalytics(anl);
+    } catch (err) {
+      console.error('Failed to update campaign status:', err);
+    }
+  };
+
   const handleFetchAIExplanation = async (campaignId) => {
     try {
       setAiLoading((prev) => ({ ...prev, [campaignId]: true }));
@@ -61,24 +96,56 @@ export default function CampaignsView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight flex items-center gap-3">
-          <span>Coordinated Campaign Detection</span>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
-            Real-Time Radar
-          </span>
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          Deterministic correlation of multi-repository PR bursts, templated AI docstring slop swarms, and sybil accounts.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight flex items-center gap-3">
+            <span>Coordinated Campaign Detection</span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Real-Time Radar
+            </span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Deterministic correlation of multi-repository PR bursts, templated AI docstring slop swarms, and sybil accounts.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <div className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] font-mono text-amber-300">
+            DEMO DATA (SYNTHETIC PATTERNS)
+          </div>
+          <button
+            onClick={handleRunScan}
+            disabled={scanning}
+            className="px-3.5 py-2 rounded-xl bg-cyan-600/25 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-2 transition-all shadow-lg shadow-cyan-950/40 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${scanning ? 'animate-spin' : ''}`} />
+            <span>{scanning ? 'Scanning Network...' : 'Run Forensic Scan'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Scan Feedback Banner */}
+      {scanMessage && (
+        <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-xs text-cyan-200 flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>{scanMessage}</span>
+          </div>
+          <button
+            onClick={() => setScanMessage(null)}
+            className="text-cyan-400 hover:text-white font-mono text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Fairness Warning */}
       <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-start gap-3">
         <ShieldAlert className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
         <div>
           <span className="font-bold text-white">Investigation Signal, Not Final Guilt: </span>
-          A detected pattern flags synchronized activity for human maintainer inspection. Final moderation decisions always require evidence inspection.
+          A detected pattern flags synchronized activity for human maintainer inspection. Final moderation decisions always require human review and corroborating evidence.
         </div>
       </div>
 
@@ -175,6 +242,57 @@ export default function CampaignsView() {
                 {isExpanded && (
                   <div className="p-5 border-t border-slate-800/80 bg-slate-950/50 space-y-5 text-xs animate-in fade-in">
                     <p className="text-slate-300 leading-relaxed font-light">{cmp.description}</p>
+
+                    {/* Why This Pattern Was Flagged */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-semibold text-amber-400">
+                        <span className="flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5" /> Why Pattern Was Flagged (Deterministic Criteria)
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400">Heuristic Engine</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px] text-slate-300">
+                        <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                          <div className="text-[10px] text-slate-500">Cross-Repo Scope</div>
+                          <div className="text-white font-bold">{cmp.affected_projects?.length || 0} Repositories</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                          <div className="text-[10px] text-slate-500">Correlated Identities</div>
+                          <div className="text-white font-bold">{cmp.contributor_usernames?.length || 0} Accounts</div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+                          <div className="text-[10px] text-slate-500">Signal Confidence</div>
+                          <div className="text-amber-400 font-bold">{Math.round(cmp.signal_strength * 100)}% Heuristic Match</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Human Review Triage Bar */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-semibold text-white">Human Review Status</div>
+                        <div className="text-[11px] text-slate-400">
+                          Suspicious patterns must be vetted by maintainers prior to ecosystem moderation.
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[
+                          { label: 'Active Investigation', val: 'Active Investigation', bg: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+                          { label: 'Confirmed Abuse', val: 'Confirmed Coordinated Abuse', bg: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+                          { label: 'Dismiss', val: 'Dismissed', bg: 'bg-slate-700 text-slate-300 border-slate-600' },
+                        ].map((st) => (
+                          <button
+                            key={st.val}
+                            onClick={() => handleUpdateStatus(cmp.id, st.val)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all border ${
+                              cmp.status === st.val ? `${st.bg} font-bold ring-1 ring-cyan-400` : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
+                            }`}
+                          >
+                            {st.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                     {/* Affected Entities Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

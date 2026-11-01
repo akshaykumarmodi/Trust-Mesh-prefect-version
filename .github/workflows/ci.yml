@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - feat/trustmesh-core-platform
+      - feat/trustmesh-integrations
+      - feat/trustmesh-ai
   pull_request:
 
 concurrency:
