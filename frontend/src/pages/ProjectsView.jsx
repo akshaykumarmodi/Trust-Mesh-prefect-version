@@ -597,8 +597,19 @@ export default function ProjectsView() {
                   <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
                     {projectPulls.map((pr) => {
                       const isVerifying = verifyingPrNumber === pr.pr_number;
-                      const isVerified = pr.verification_status === 'VERIFIED_GITHUB';
-                      const isUnable = pr.verification_status === 'UNABLE_TO_VERIFY';
+                      const isVerified =
+                        pr.verification_status === 'Verified GitHub record' ||
+                        pr.verification_status === 'VERIFIED_GITHUB' ||
+                        pr.verification_status === 'VERIFIED';
+                      const isUnable =
+                        pr.verification_status === 'Unable to verify' ||
+                        pr.verification_status === 'UNABLE_TO_VERIFY';
+                      const prUrl =
+                        pr.html_url ||
+                        pr.pr_url ||
+                        (peeringProj.github_owner && peeringProj.github_repo
+                          ? `https://github.com/${peeringProj.github_owner}/${peeringProj.github_repo}/pull/${pr.pr_number}`
+                          : '#');
 
                       return (
                         <div
@@ -610,7 +621,7 @@ export default function ProjectsView() {
                               <div className="flex items-center gap-2">
                                 <span className="font-mono text-cyan-400 font-semibold text-xs">#{pr.pr_number}</span>
                                 <a
-                                  href={pr.pr_url}
+                                  href={prUrl}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="font-bold text-white text-xs hover:text-cyan-300 flex items-center gap-1 transition-colors"
@@ -620,7 +631,7 @@ export default function ProjectsView() {
                                 </a>
                               </div>
                               <div className="text-[11px] text-slate-400 line-clamp-1">
-                                {pr.body || 'No description provided.'}
+                                {pr.description || pr.body || 'No description provided.'}
                               </div>
                             </div>
 
@@ -645,7 +656,7 @@ export default function ProjectsView() {
                                     ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                                     : 'bg-slate-800/80 text-slate-400 border-slate-700'
                                 }`}
-                                title={pr.verification_details ? JSON.stringify(pr.verification_details) : ''}
+                                title={pr.verification_details ? (typeof pr.verification_details === 'string' ? pr.verification_details : JSON.stringify(pr.verification_details)) : ''}
                               >
                                 {isVerified ? (
                                   <CheckCircle className="w-3 h-3 text-emerald-400" />
@@ -659,11 +670,21 @@ export default function ProjectsView() {
                                     ? 'Verified GitHub record'
                                     : isUnable
                                     ? 'Unable to verify'
-                                    : 'Verification unavailable'}
+                                    : pr.verification_status || 'Verification unavailable'}
                                 </span>
                               </span>
                             </div>
                           </div>
+
+                          {pr.verification_details && (
+                            <div className="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800/80 text-[10px] text-slate-300 font-mono flex items-start gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                              <div className="flex-1 leading-relaxed">
+                                <span className="font-semibold text-cyan-300">Provenance: </span>
+                                <span>{typeof pr.verification_details === 'string' ? pr.verification_details : JSON.stringify(pr.verification_details)}</span>
+                              </div>
+                            </div>
+                          )}
 
                           <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-900 text-[10px] font-mono text-slate-400">
                             <div className="flex items-center gap-3">
@@ -682,16 +703,32 @@ export default function ProjectsView() {
 
                             <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleVerifyPR(peeringProj.id, pr.pr_number, pr.pr_url)}
+                                onClick={() => handleVerifyPR(peeringProj.id, pr.pr_number, prUrl)}
                                 disabled={isVerifying}
-                                className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white border border-cyan-500/20 text-[10px] flex items-center gap-1 transition-colors"
+                                className={`px-2.5 py-1 rounded-md text-[10px] flex items-center gap-1 transition-colors border ${
+                                  isVerifying
+                                    ? 'bg-cyan-950/60 text-cyan-400 border-cyan-500/40 cursor-wait'
+                                    : isVerified
+                                    ? 'bg-slate-900 hover:bg-slate-800 text-emerald-300 hover:text-emerald-200 border-emerald-500/30'
+                                    : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white border-cyan-500/20'
+                                }`}
                               >
                                 {isVerifying ? (
-                                  <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                                  <>
+                                    <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                                    <span>Verifying via GitHub API...</span>
+                                  </>
+                                ) : isVerified ? (
+                                  <>
+                                    <CheckCircle className="w-2.5 h-2.5 text-emerald-400" />
+                                    <span>Verified (Re-verify)</span>
+                                  </>
                                 ) : (
-                                  <ShieldCheck className="w-2.5 h-2.5 text-cyan-400" />
+                                  <>
+                                    <ShieldCheck className="w-2.5 h-2.5 text-cyan-400" />
+                                    <span>Verify Authenticity</span>
+                                  </>
                                 )}
-                                <span>{isVerifying ? 'Verifying...' : 'Verify Authenticity'}</span>
                               </button>
                             </div>
                           </div>
