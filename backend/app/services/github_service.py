@@ -403,6 +403,7 @@ class GitHubService:
 
         synced_count = 0
         now = datetime.now(timezone.utc)
+        synced_contributors: Dict[str, Contributor] = {}
 
         for p in pulls:
             pr_num = p["pr_number"]
@@ -454,23 +455,36 @@ class GitHubService:
 
             author_uname = p["author_username"]
             if author_uname and author_uname != "ghost":
-                contrib = db.query(Contributor).filter(Contributor.username == author_uname).first()
+                author_key = author_uname.lower()
+                contrib = synced_contributors.get(author_key)
+                if not contrib:
+                    contrib = (
+                        db.query(Contributor)
+                        .filter(
+                            (Contributor.id == f"contrib-gh-{author_key}")
+                            | (Contributor.username == author_uname)
+                        )
+                        .first()
+                    )
                 if not contrib:
                     new_contrib = Contributor(
-                        id=f"contrib-gh-{author_uname.lower()}",
+                        id=f"contrib-gh-{author_key}",
                         username=author_uname,
                         display_name=author_uname,
                         avatar_url=p["author_avatar_url"],
                         github_url=f"https://github.com/{author_uname}",
                         bio=f"Open-source contributor to {project.name}.",
-                        reputation_state="NEWCOMER", # Principle #1: Newcomers start with neutral baseline!
+                        reputation_state="NEWCOMER",  # Principle #1: Newcomers start with neutral baseline!
                         total_contributions=1,
                         first_seen_at=p["created_at"] or now,
                         created_at=now,
                     )
                     db.add(new_contrib)
+                    db.flush()
+                    synced_contributors[author_key] = new_contrib
                 else:
                     contrib.total_contributions = (contrib.total_contributions or 0) + 1
+                    synced_contributors[author_key] = contrib
 
             synced_count += 1
 
