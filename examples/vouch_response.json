@@ -1,0 +1,13 @@
+{
+  "id": "vouch-9ff17acf",
+  "contributor_id": "contrib-elena",
+  "contributor_username": "elena-rustacean",
+  "source_project_id": "proj-hyperflow",
+  "source_project_name": "HyperFlow Engine",
+  "reason": "Authored zero-copy memory allocator optimization in pull request #342",
+  "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/342",
+  "context": "Core memory engine optimization with 99.8% test coverage and formal proof review",
+  "confidence": 0.95,
+  "provenance_hash": "3093cfad2d370496",
+  "created_at": "2026-10-31T16:57:21.914603"
+}

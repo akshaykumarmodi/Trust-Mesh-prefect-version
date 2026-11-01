@@ -1,0 +1,107 @@
+{
+  "version": "1.0.0",
+  "exported_at": "2026-10-31T16:57:21.960004Z",
+  "source_project": {
+    "name": "HyperFlow Engine",
+    "slug": "hyperflow-engine",
+    "description": "High-performance async distributed task workflow execution runtime written in Rust and C++.",
+    "repo_url": "https://github.com/hyperflow-org/hyperflow",
+    "category": "Distributed Systems",
+    "stars": 14200,
+    "trust_policy": {
+      "strictness": "high",
+      "min_confidence": 0.7,
+      "peer_weights": {
+        "proj-cloudnative": 1.0,
+        "proj-cryptomesh": 0.85,
+        "proj-devpulse": 0.8,
+        "proj-tensorserve": 0.2
+      }
+    },
+    "id": "proj-hyperflow",
+    "created_at": "2026-07-03T15:49:36.835354",
+    "updated_at": "2026-10-31T15:49:36.836360"
+  },
+  "vouches": [
+    {
+      "id": "vouch-1",
+      "contributor_id": "contrib-elena",
+      "contributor_username": "elena-rustacean",
+      "source_project_id": "proj-hyperflow",
+      "source_project_name": "HyperFlow Engine",
+      "reason": "Authored high-throughput zero-copy ring buffer PR that improved async throughput by 42%.",
+      "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/412",
+      "context": "Thorough test coverage included, passed all deterministic concurrency fuzzers.",
+      "confidence": 1.0,
+      "provenance_hash": "bc096e34bad27667",
+      "created_at": "2026-08-02T15:49:36.835354"
+    },
+    {
+      "id": "vouch-9ff17acf",
+      "contributor_id": "contrib-elena",
+      "contributor_username": "elena-rustacean",
+      "source_project_id": "proj-hyperflow",
+      "source_project_name": "HyperFlow Engine",
+      "reason": "Authored zero-copy memory allocator optimization in pull request #342",
+      "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/342",
+      "context": "Core memory engine optimization with 99.8% test coverage and formal proof review",
+      "confidence": 0.95,
+      "provenance_hash": "3093cfad2d370496",
+      "created_at": "2026-10-31T16:57:21.914603"
+    }
+  ],
+  "denouncements": [
+    {
+      "id": "denounce-1",
+      "contributor_id": "contrib-slop-bot",
+      "contributor_username": "slop-bot-99",
+      "reporting_project_id": "proj-hyperflow",
+      "reporting_project_name": "HyperFlow Engine",
+      "reason": "Coordinated AI Slop: Mass spamming of trivial docstring whitespace PRs across repos.",
+      "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/589",
+      "details": "Account opened 8 identical pull requests within 6 minutes altering harmless comments with hallucinatory AI rephrasing.",
+      "status": "Reviewed",
+      "review_notes": "Confirmed automated spam. Correlated with identical submissions in DevPulse and TensorServe.",
+      "reviewed_by": "maintainer@hyperflow.org",
+      "created_at": "2026-10-28T15:49:36.835354",
+      "updated_at": "2026-10-31T15:49:36.843465"
+    },
+    {
+      "id": "denounce-60d0da11",
+      "contributor_id": "contrib-slop-bot",
+      "contributor_username": "slop-bot-99",
+      "reporting_project_id": "proj-hyperflow",
+      "reporting_project_name": "HyperFlow Engine",
+      "reason": "Templated AI docstring churn PR submitted without semantic logic",
+      "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/991",
+      "details": "Automated LLM docstring modification that introduced invalid typings across 4 files",
+      "status": "Pending Review",
+      "review_notes": "Initial report submitted. Pending maintainer triage.",
+      "reviewed_by": "",
+      "created_at": "2026-10-31T16:57:21.924375",
+      "updated_at": "2026-10-31T16:57:21.924382"
+    }
+  ],
+  "peer_edges": [
+    {
+      "target_project_id": "proj-cloudnative",
+      "weight": 1.0,
+      "notes": "Core upstream dependency - full trust"
+    },
+    {
+      "target_project_id": "proj-cryptomesh",
+      "weight": 0.85,
+      "notes": "High cryptographic verification standards"
+    },
+    {
+      "target_project_id": "proj-devpulse",
+      "weight": 0.8,
+      "notes": "Trusted tooling partner"
+    }
+  ],
+  "signature_envelope": {
+    "algorithm": "SHA256-ED25519-SIM",
+    "signer_pubkey": "tm_pk_hyperflow-engine",
+    "signature": "e84b92548272703588f048d44e384d77f9875dcbe07025a35f8ad2a0b0eb238c"
+  }
+}

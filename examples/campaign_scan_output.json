@@ -1,0 +1,8 @@
+{
+  "status": "success",
+  "reports_analyzed": 5,
+  "clusters_detected": 0,
+  "new_campaigns_created": 0,
+  "scan_timestamp": "2026-10-31T16:57:21.953504+00:00",
+  "algorithm": "Deterministic Token-Jaccard + Temporal Burst Correlator (v2.0)"
+}

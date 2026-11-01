@@ -1,0 +1,15 @@
+{
+  "id": "denounce-60d0da11",
+  "contributor_id": "contrib-slop-bot",
+  "contributor_username": "slop-bot-99",
+  "reporting_project_id": "proj-hyperflow",
+  "reporting_project_name": "HyperFlow Engine",
+  "reason": "Templated AI docstring churn PR submitted without semantic logic",
+  "evidence_url": "https://github.com/hyperflow-org/hyperflow/pull/991",
+  "details": "Automated LLM docstring modification that introduced invalid typings across 4 files",
+  "status": "Pending Review",
+  "review_notes": "Initial report submitted. Pending maintainer triage.",
+  "reviewed_by": "",
+  "created_at": "2026-10-31T16:57:21.924375",
+  "updated_at": "2026-10-31T16:57:21.924382"
+}

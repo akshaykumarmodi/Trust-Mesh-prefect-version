@@ -1,0 +1,47 @@
+{
+  "contributor_id": "contrib-alex",
+  "username": "alex-polyglot",
+  "viewing_project_id": "proj-hyperflow",
+  "viewing_project_name": "HyperFlow Engine",
+  "reputation_state": "UNDER REVIEW",
+  "trust_confidence": 0.5,
+  "effective_vouch_weight": 0.68,
+  "effective_denounce_weight": 0.3,
+  "conflicting_signals_detected": true,
+  "newcomer_fairness_applied": false,
+  "summary_explanation": "alex-polyglot has conflicting signals: endorsed by trusted peers (effective vouch weight: 0.68) but also subject to reports (effective alert weight: 0.30). Both sets of evidence are displayed side-by-side.",
+  "signals_considered": [
+    {
+      "source": "Vouch by DevPulse CLI",
+      "type": "VOUCH",
+      "source_project_id": "proj-devpulse",
+      "source_project_name": "DevPulse CLI",
+      "reason": "Redesigned interactive terminal CLI output with graceful fallbacks for headless CI environments.",
+      "evidence_url": "https://github.com/devpulse/cli/pull/89",
+      "peer_trust_weight_applied": 0.8,
+      "raw_confidence": 0.85,
+      "discount_reason": null,
+      "status": "Active"
+    },
+    {
+      "source": "Report by CryptoMesh Core",
+      "type": "DENOUNCEMENT",
+      "source_project_id": "proj-cryptomesh",
+      "source_project_name": "CryptoMesh Core",
+      "reason": "Unverified Dependency Injection: Attempted to add external untrusted npm package in crypto core.",
+      "evidence_url": "https://github.com/cryptomesh/core/pull/231",
+      "peer_trust_weight_applied": 0.2975,
+      "raw_confidence": 1.0,
+      "discount_reason": "Unverified Allegation (status discount: 65% reduction pending maintainer review)",
+      "status": "Pending Review"
+    }
+  ],
+  "signals_discounted": [],
+  "missing_evidence_hints": [
+    "Cross-project evidence discrepancy requires maintainer human oversight."
+  ],
+  "applied_policy_rules": [
+    "Evaluated from perspective of 'HyperFlow Engine' (ID: proj-hyperflow)",
+    "Conflict Resolution Rule: Positive endorsements exist alongside active allegations. Flagged for human review."
+  ]
+}
