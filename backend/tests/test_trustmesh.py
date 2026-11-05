@@ -148,6 +148,14 @@ def test_create_contributor_and_newcomer_baseline():
     Test manual contributor registration.
     Must start in NEWCOMER state with neutral trust confidence (0.50).
     """
+    from app.models import Contributor
+    from tests.conftest import TestSession
+    with TestSession() as s:
+        existing = s.query(Contributor).filter(Contributor.username == "janedoe-dev").first()
+        if existing:
+            s.delete(existing)
+            s.commit()
+
     payload = {
         "username": "janedoe-dev",
         "display_name": "Jane Doe",

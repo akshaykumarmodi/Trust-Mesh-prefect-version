@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from sqlalchemy import inspect, text
 from app.core.config import settings, _ROOT_DIR
 from app.database.session import engine, Base, SessionLocal
 from app.services.seed_data import seed_database
@@ -31,42 +32,49 @@ from app.api.auth import router as auth_router
 from app.api.admin import router as admin_router
 
 def run_migrations(bind_engine):
-    with bind_engine.connect() as conn:
-        try:
-            result = conn.exec_driver_sql("PRAGMA table_info(projects);")
-            existing_cols = {row[1] for row in result.fetchall()}
-            if existing_cols:
-                col_defs = [
-                    ("is_github_connected", "BOOLEAN DEFAULT 0"),
-                    ("github_owner", "VARCHAR(128) DEFAULT ''"),
-                    ("github_repo", "VARCHAR(128) DEFAULT ''"),
-                    ("default_branch", "VARCHAR(64) DEFAULT 'main'"),
-                    ("visibility", "VARCHAR(32) DEFAULT 'public'"),
-                    ("github_created_at", "DATETIME"),
-                    ("github_updated_at", "DATETIME"),
-                    ("last_synced_at", "DATETIME"),
-                    ("sync_status", "VARCHAR(32) DEFAULT 'IDLE'"),
-                    ("sync_error", "TEXT DEFAULT ''"),
-                ]
-                for col_name, col_type in col_defs:
-                    if col_name not in existing_cols:
-                        conn.exec_driver_sql(f"ALTER TABLE projects ADD COLUMN {col_name} {col_type};")
-                conn.commit()
-        except Exception:
-            pass
+    try:
+        inspector = inspect(bind_engine)
+        if not inspector.has_table("projects"):
+            return
+        existing_cols = {col["name"] for col in inspector.get_columns("projects")}
+        if not existing_cols:
+            return
+        # Dialect-agnostic column definitions (compatible with both SQLite and PostgreSQL)
+        col_defs = [
+            ("is_github_connected", "BOOLEAN DEFAULT FALSE"),
+            ("github_owner", "VARCHAR(128) DEFAULT ''"),
+            ("github_repo", "VARCHAR(128) DEFAULT ''"),
+            ("default_branch", "VARCHAR(64) DEFAULT 'main'"),
+            ("visibility", "VARCHAR(32) DEFAULT 'public'"),
+            ("github_created_at", "TIMESTAMP"),
+            ("github_updated_at", "TIMESTAMP"),
+            ("last_synced_at", "TIMESTAMP"),
+            ("sync_status", "VARCHAR(32) DEFAULT 'IDLE'"),
+            ("sync_error", "TEXT DEFAULT ''"),
+        ]
+        with bind_engine.connect() as conn:
+            for col_name, col_type in col_defs:
+                if col_name not in existing_cols:
+                    try:
+                        conn.execute(text(f"ALTER TABLE projects ADD COLUMN {col_name} {col_type};"))
+                    except Exception as col_err:
+                        print(f"[Migration Warning] Add column {col_name}: {col_err}")
+            conn.commit()
+    except Exception as exc:
+        print(f"[Migration Warning] run_migrations: {exc}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Defensive startup ensuring Vercel serverless functions boot cleanly without exit status 1
     try:
-        run_migrations(engine)
-    except Exception as exc:
-        print(f"[Lifespan Warning] run_migrations: {exc}")
-
-    try:
         Base.metadata.create_all(bind=engine)
     except Exception as exc:
         print(f"[Lifespan Warning] Base.metadata.create_all: {exc}")
+
+    try:
+        run_migrations(engine)
+    except Exception as exc:
+        print(f"[Lifespan Warning] run_migrations: {exc}")
 
     try:
         db = SessionLocal()
