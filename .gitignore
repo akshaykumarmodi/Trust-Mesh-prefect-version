@@ -34,3 +34,7 @@ build/
 *.db
 *.sqlite
 *.sqlite3
+
+# Self-Owned Local Mailbox
+mailbox/
+*.eml

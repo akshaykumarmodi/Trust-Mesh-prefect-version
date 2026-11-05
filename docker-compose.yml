@@ -1,0 +1,15 @@
+services:
+  trustmesh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustmesh
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8000
+    volumes:
+      - ./trustmesh.db:/app/trustmesh.db
+    restart: unless-stopped
+

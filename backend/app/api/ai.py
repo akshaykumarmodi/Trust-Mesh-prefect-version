@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api/ai", tags=["AI Analysis Engine"])
 def get_ai_service() -> TrustMeshAIService:
     return ai_service
 
+@router.get("/status", summary="AI Engine Status")
 @router.get("/health", summary="AI Engine Health & Active Provider Status")
 def ai_health(service: TrustMeshAIService = Depends(get_ai_service)) -> Dict[str, Any]:
     """

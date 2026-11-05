@@ -4,13 +4,24 @@
   "description": "TrustMesh — A Decentralized Trust Network Against AI Slop",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix frontend run dev",
+    "dev": "concurrently -n \"backend,frontend\" -c \"cyan.bold,magenta.bold\" \"npm run backend\" \"npm run frontend\"",
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "./backend/.venv/bin/python main.py",
     "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "start": "npm run build && npm run serve",
+    "serve": "./backend/.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000",
     "preview": "npm --prefix frontend run preview",
     "lint": "npm --prefix frontend run lint",
-    "backend": "PYTHONPATH=backend ./backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload",
+    "test": "npm run test:backend",
     "test:backend": "PYTHONPATH=backend ./backend/.venv/bin/pytest backend/tests/ -v"
   },
   "author": "Nexora (Kartik Goyal, Akshay Kumar Modi, Avi Garg)",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  },
+  "dependencies": {
+    "nodemailer": "^10.3.1"
+  }
 }

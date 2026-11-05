@@ -1,58 +1,78 @@
-# TrustMesh Deployment Guide
+# TrustMesh Deployment & Full-Stack Integration Guide
 
-This guide describes how to deploy TrustMesh to **Vercel** (Frontend) and a Python runtime (Backend).
+This guide describes how to run and deploy TrustMesh either as a **Unified Full-Stack Application** (FastAPI serving React SPA) or as a **Decoupled Deployment** (Vercel Frontend + Python Backend).
 
 ---
 
 ## 1. Architecture Overview
 
-TrustMesh is structured as a decoupled full-stack platform:
-- **Frontend**: React 19 + Vite SPA (located in `frontend/`)
-  - Target: **Vercel**
-  - Features: Automatic CDN distribution, SPA fallback routing, and dynamic API base configuration.
-- **Backend**: FastAPI + SQLite + Groq Live AI Inference (located in `backend/`)
-  - Target: **Render / Railway / Fly.io** or local tunnel via **Cloudflare Tunnel / ngrok**.
-  - Note: Vercel frontend hosting serves static client assets and proxies API calls. The Python backend requires a persistent environment to maintain SQLite state, database connection pools, and live Groq inference sessions.
+TrustMesh can run in two supported configurations:
+
+### Mode A: Combined Single-Server / Full-Stack (Recommended for Docker, Render, Railway, Fly.io, Self-Hosted)
+- **FastAPI** serves both:
+  - JSON REST API endpoints at `/api/*`
+  - Interactive OpenAPI / Swagger UI at `/docs`
+  - Compiled React 19 SPA static assets from `frontend/dist` with client-side SPA fallback routing (`/projects`, `/contributors`, `/admin`, `/graph`, `/evidence`, `/campaigns`, `/vouches`, `/denouncements`, `/settings`)
+- **Benefits**:
+  - Single port (e.g. `8000`)
+  - No CORS setup needed
+  - Unified deployment and monitoring
+
+### Mode B: Decoupled / Serverless (Vercel + Managed Backend)
+- **Frontend**: React 19 + Vite deployed to **Vercel** CDN.
+- **Backend**: FastAPI running on **Render / Railway / Fly.io** or serverless via Vercel's Python runtime (`api/index.py`).
+- **Dynamic Configuration**: `frontend/src/services/api.js` automatically uses `VITE_API_BASE_URL` or defaults to `/api`.
 
 ---
 
-## 2. Frontend Deployment on Vercel
+## 2. Quick Local Start (Combined Full-Stack)
 
-### Option A: Via Vercel Web Dashboard (Recommended)
-
-1. Navigate to [vercel.com/new](https://vercel.com/new).
-2. Connect your GitHub account and import the repository: `akshaykumarmodi/TrustMesh`.
-3. In the **Configure Project** screen:
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: Click `Edit` and select `frontend` (or leave as root; both root and frontend `vercel.json` are pre-configured).
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-4. Expand **Environment Variables**:
-   - `VITE_API_BASE_URL`: Live URL of the backend (e.g. `https://trustmesh-backend.onrender.com` or your tunnel URL). If omitted, requests default to `/api`.
-5. Click **Deploy**.
-
-### Option B: Via Vercel CLI
-
+### Option 1: One-Click Development (Concurrent Backend + Frontend)
 ```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy from repository root
-vercel
-
-# Deploy to production
-vercel --prod
+# Starts FastAPI on 8000 and Vite dev server on 5173 with proxy
+npm run dev
 ```
 
+### Option 2: Combined Production Server
+```bash
+# Builds React frontend and serves both API and UI from FastAPI on port 8000
+npm start
+
+# Or using the Python runner directly:
+python run.py
+```
+Open **`http://127.0.0.1:8000`** in your browser.
+
 ---
 
-## 3. SPA Routing & Fallbacks
+## 3. Docker Deployment (Single Container Full-Stack)
 
-To ensure client-side routes (e.g. `/projects`, `/contributors`, `/admin`, `/graph`) do not return 404 when refreshed or accessed directly:
-- `frontend/vercel.json` and `vercel.json` define rewrite rules routing all non-asset requests to `/index.html`:
+A production-ready multi-stage Dockerfile is provided:
+
+```bash
+# Build and run with Docker Compose
+docker compose up --build -d
+
+# Check logs
+docker compose logs -f
+```
+The entire application (FastAPI backend + compiled React frontend) is available at `http://localhost:8000`.
+
+---
+
+## 4. Vercel Combined Serverless Deployment
+
+TrustMesh includes a root `vercel.json` and `api/index.py` serverless entrypoint:
+
 ```json
 {
+  "buildCommand": "npm --prefix frontend run build",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -61,52 +81,25 @@ To ensure client-side routes (e.g. `/projects`, `/contributors`, `/admin`, `/gra
 }
 ```
 
----
-
-## 4. Backend Deployment Options
-
-### Option A: Render.com (Free Python Web Service)
-
-1. Go to [render.com](https://render.com) and create a **New Web Service**.
-2. Connect the `TrustMesh` repository.
-3. Configure settings:
-   - **Root Directory**: `backend`
-   - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port 10000`
-4. Add backend environment variables (see below).
-5. Copy the assigned URL (e.g. `https://trustmesh-api.onrender.com`) and paste it as `VITE_API_BASE_URL` in Vercel.
-
-### Option B: Instant Hackathon Demo via Tunnel
-
-For immediate live demonstration while running the backend locally:
-
+Deploying from root:
 ```bash
-# Run backend on port 8000
-PYTHONPATH=backend ./backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
-
-# In a separate terminal, expose via Cloudflare Tunnel
-npx cloudflared tunnel --url http://127.0.0.1:8000
+vercel
+vercel --prod
 ```
-
-Add the generated tunnel URL as `VITE_API_BASE_URL` in Vercel.
 
 ---
 
 ## 5. Environment Variables & Security Isolation
 
-### Frontend Environment Variables (Vercel)
-Only public configuration is exposed to client bundles:
-| Variable | Description | Example |
+### Public Client Variables (Vercel / Vite)
+| Variable | Description | Default |
 | :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | Live FastAPI backend base URL | `https://trustmesh-api.onrender.com` |
+| `VITE_API_BASE_URL` | Optional external API URL (omit for same-origin `/api`) | `""` |
 
-> [!CAUTION]
-> **Security Rule**: Never configure private API keys, database credentials, or secret tokens as `VITE_` variables. All secret tokens reside exclusively on the backend.
-
-### Backend Environment Variables (Render / Railway / Server)
+### Backend / Server Environment Variables
 | Variable | Required | Description |
 | :--- | :--- | :--- |
+| `PORT` | Optional | Server port (default: `8000`) |
 | `GROQ_API_KEY` | Optional | Groq API key for live GPT-OSS-120B inference |
 | `AI_PROVIDER` | Optional | Set to `groq` |
 | `AI_MODEL_NAME` | Optional | Defaults to `openai/gpt-oss-120b` |
@@ -119,8 +112,9 @@ Only public configuration is exposed to client bundles:
 
 ## 6. Verification Checklist
 
-- [x] `frontend/vercel.json` SPA fallback verified.
-- [x] `vercel.json` root monorepo build verified.
-- [x] Dynamic `VITE_API_BASE_URL` resolution verified in `frontend/src/services/api.js`.
-- [x] Backend CORS policy allows requests from Vercel preview and production domains (`allow_origins=["*"]`).
-- [x] Zero private secrets or `.env` files committed.
+- [x] Combined single-server serving verified: `GET /` serves React SPA.
+- [x] Client-side SPA routing verified: direct access/refresh on `/projects`, `/contributors`, `/admin`, `/graph` returns `index.html`.
+- [x] Static assets served correctly from `/assets/*` and `/favicon.svg`.
+- [x] Non-existent `/api/*` endpoints return 404 JSON, not HTML.
+- [x] Concurrent development command `npm run dev` launches both servers.
+- [x] Automated test suite verified (all 76 tests passing).

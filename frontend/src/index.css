@@ -102,3 +102,31 @@
 .react-flow__edge-path {
   stroke-width: 2 !important;
 }
+
+/* Exploding Loader Cyber Animations */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes reverse-spin {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 18s linear infinite;
+}
+
+.animate-reverse-spin {
+  animation: reverse-spin 12s linear infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 3.5s ease-in-out infinite;
+}

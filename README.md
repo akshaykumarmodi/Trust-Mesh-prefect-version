@@ -8,7 +8,7 @@
 [![Python 3.13+](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python-emerald.svg)](#)
 [![React 19](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20React%20Flow-8b5cf6.svg)](#)
 [![AI Architecture](https://img.shields.io/badge/AI%20Model-GPT--OSS--120B%20(Open--Weight)-f59e0b.svg)](#)
-[![Tests Passing](https://img.shields.io/badge/Tests-26%2F26%20Passed%20(100%25)-10b981.svg)](#)
+[![Tests Passing](https://img.shields.io/badge/Tests-78%2F78%20Passed%20(100%25)-10b981.svg)](#)
 
 ---
 
@@ -126,7 +126,7 @@ Instead of requiring projects to blindly trust each other or an arbitrary scorin
 - **Node.js** (v18+ or v20+)
 - **Python** (3.11, 3.12, or 3.13)
 
-### Running Everything with Root Scripts
+### One-Command Setup & Development (Combined)
 
 From the repository root:
 ```bash
@@ -134,21 +134,32 @@ From the repository root:
 python3 -m venv backend/.venv
 ./backend/.venv/bin/pip install -r backend/requirements.txt
 
-# 2. Run backend test suite (26 tests)
-PYTHONPATH=backend ./backend/.venv/bin/pytest backend/tests/ -v
-
-# 3. Start backend daemon (Port 8000)
-PYTHONPATH=backend ./backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
-
-# 4. In a separate terminal, install and run frontend dev server (Port 5173)
+# 2. Install workspace dependencies
 npm install
+
+# 3. Run backend test suite (78 tests)
+npm test
+
+# 4. Start both Backend & Frontend simultaneously with one command:
 npm run dev
-
-# 5. Build for production verification
-npm run build
 ```
+- **Frontend Web UI**: `http://127.0.0.1:5173` (proxies `/api` to 8000)
+- **FastAPI API & Docs**: `http://127.0.0.1:8000/docs`
 
-Open your browser at **`http://127.0.0.1:5173`**.
+---
+
+### Single-Port Combined Full-Stack Server (Production Mode)
+
+FastAPI natively serves the compiled React 19 SPA, Swagger documentation, and REST endpoints together on a single port:
+
+```bash
+# Build frontend and serve both from FastAPI on port 8000:
+npm start
+
+# Or using the Python runner directly:
+python run.py
+```
+Open your browser at **`http://127.0.0.1:8000`** — no separate frontend server or CORS proxy required!
 
 ---
 

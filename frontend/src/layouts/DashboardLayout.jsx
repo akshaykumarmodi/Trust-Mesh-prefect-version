@@ -19,6 +19,7 @@ import {
   Activity,
   LogOut,
   UserCheck,
+  Mail,
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -29,6 +30,7 @@ export default function DashboardLayout({
   currentUser,
   onOpenAuth,
   onLogout,
+  onOpenMailbox,
   children,
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -224,6 +226,17 @@ export default function DashboardLayout({
                 <span>Sign In / Admin</span>
               </button>
             )}
+
+            {/* Self-Owned Autonomous Mailbox Button */}
+            <button
+              onClick={onOpenMailbox}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 text-xs font-medium transition-all flex items-center gap-1.5 relative shadow-sm"
+              title="Open TrustMesh Self-Owned Mailbox"
+            >
+              <Mail className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Mailbox</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            </button>
 
             <button
               onClick={onOpenLanding}

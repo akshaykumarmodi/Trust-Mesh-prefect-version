@@ -157,6 +157,7 @@ export const api = {
   register: (data) => request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   login: (data) => request('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   githubLogin: (data) => request('/auth/github-login', { method: 'POST', body: JSON.stringify(data) }),
+  notifyLogin: (data) => request('/auth/login-notification', { method: 'POST', body: JSON.stringify(data) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   getMe: () => request('/auth/me'),
   verifyAccount: (data) => request('/auth/verify-account', { method: 'POST', body: JSON.stringify(data) }),
@@ -183,5 +184,7 @@ export const api = {
   },
   sendAdminTestEmail: (recipient = 'akshay123modi@gmail.com') =>
     request('/admin/test-email', { method: 'POST', body: JSON.stringify({ recipient }) }),
+  getSmtpStatus: () => request('/admin/smtp-status'),
+  updateSmtpConfig: (data) => request('/admin/smtp-config', { method: 'POST', body: JSON.stringify(data) }),
   getPrivacyNotice: () => request('/admin/privacy-notice'),
 };

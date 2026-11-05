@@ -12,13 +12,17 @@ import EvidenceCenterView from './pages/EvidenceCenterView';
 import SettingsView from './pages/SettingsView';
 import AdminActivityView from './pages/AdminActivityView';
 import AuthModal from './components/AuthModal';
+import ExplodingLoader from './components/ExplodingLoader';
+import SelfOwnedMailboxModal from './components/SelfOwnedMailboxModal';
 import { api } from './services/api';
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState('landing');
   const [aiStatus, setAiStatus] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [mailboxOpen, setMailboxOpen] = useState(false);
 
   useEffect(() => {
     // Check local storage for existing session
@@ -63,6 +67,11 @@ export default function App() {
     }
   };
 
+  // Show Moving Exploding Loader on initial site visit
+  if (isLoading) {
+    return <ExplodingLoader onComplete={() => setIsLoading(false)} />;
+  }
+
   // If on Landing Page
   if (currentView === 'landing') {
     return <LandingPage onEnterApp={(target) => handleNavigate(target || 'overview')} />;
@@ -79,6 +88,7 @@ export default function App() {
         currentUser={currentUser}
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
+        onOpenMailbox={() => setMailboxOpen(true)}
       >
         {currentView === 'overview' && <OverviewView onNavigate={handleNavigate} />}
         {currentView === 'network' && (
@@ -103,7 +113,12 @@ export default function App() {
         {currentView === 'denouncements' && <DenouncementsView />}
         {currentView === 'campaigns' && <CampaignsView />}
         {currentView === 'evidence' && <EvidenceCenterView />}
-        {currentView === 'admin' && <AdminActivityView onOpenAuth={() => setAuthModalOpen(true)} />}
+        {currentView === 'admin' && (
+          <AdminActivityView
+            onOpenAuth={() => setAuthModalOpen(true)}
+            currentUser={currentUser}
+          />
+        )}
         {currentView === 'settings' && <SettingsView aiStatus={aiStatus} />}
       </DashboardLayout>
 
@@ -113,6 +128,11 @@ export default function App() {
         onAuthSuccess={(user) => {
           setCurrentUser(user);
         }}
+      />
+
+      <SelfOwnedMailboxModal
+        isOpen={mailboxOpen}
+        onClose={() => setMailboxOpen(false)}
       />
     </>
   );

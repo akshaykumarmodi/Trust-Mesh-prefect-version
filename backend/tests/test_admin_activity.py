@@ -411,8 +411,8 @@ def test_resend_network_timeout_retry_handling(client, db_session):
         assert "Connection timed out" in notif.error_message
 
 def test_resend_not_configured_records_simulated(client, db_session):
-    """Verifies that when RESEND_API_KEY is omitted/empty, simulation is clearly recorded."""
-    with patch.dict(os.environ, {"RESEND_API_KEY": ""}):
+    """Verifies that when RESEND_API_KEY is omitted/empty and provider is resend, simulation is clearly recorded."""
+    with patch.dict(os.environ, {"RESEND_API_KEY": "", "EMAIL_PROVIDER": "resend"}):
         resp = client.post(
             "/api/admin/test-email",
             headers={"X-Admin-Key": settings.ADMIN_SECRET_KEY},
@@ -429,6 +429,36 @@ def test_resend_not_configured_records_simulated(client, db_session):
         assert notif is not None
         assert notif.status == "SIMULATED"
         assert notif.sent_at is None
+
+def test_database_automated_email_dispatch(client, db_session):
+    """Verifies that our Database Automated Email Engine sends and records notifications autonomously without Resend."""
+    with patch.dict(os.environ, {"EMAIL_PROVIDER": "database", "RESEND_API_KEY": ""}):
+        resp = client.post(
+            "/api/admin/test-email",
+            headers={"X-Admin-Key": settings.ADMIN_SECRET_KEY},
+            json={"recipient": "akshay123modi@gmail.com"}
+        )
+        assert resp.status_code == 200
+        res_data = resp.json()
+        assert res_data["status"] == "SENT"
+        assert res_data["success"] is True
+        assert "Database" in res_data["message"]
+
+        notif = db_session.query(EmailNotification).filter(
+            EmailNotification.id == res_data["notification_id"]
+        ).first()
+        assert notif is not None
+        assert notif.status == "SENT"
+        assert notif.sent_at is not None
+        assert notif.resend_id.startswith("db-auto-")
+
+    # Also test the automated queue processing endpoint
+    queue_resp = client.post(
+        "/api/admin/emails/process-queue",
+        headers={"X-Admin-Key": settings.ADMIN_SECRET_KEY}
+    )
+    assert queue_resp.status_code == 200
+    assert queue_resp.json()["success"] is True
 
 # ==============================================================================
 # Comprehensive Data Mapping & Event-Specific Template Validation Tests
@@ -789,3 +819,29 @@ def test_github_connected_notification_template(client, db_session):
     assert "@grace-hopper" in email_notif.html_content
     assert "repo, read:user" in email_notif.html_content
     assert "N/A" not in email_notif.html_content
+
+def test_admin_login_with_both_passwords_and_aliases(client):
+    """Ensure admin account can authenticate with both standard and demo password variants."""
+    admin_email = settings.ADMIN_NOTIFICATION_EMAIL
+
+    # 1. Test login with TrustMesh2026!
+    res1 = client.post("/api/auth/login", json={"email": admin_email, "password": "TrustMesh2026!"})
+    assert res1.status_code == 200
+    token1 = res1.json()["access_token"]
+    assert bool(token1)
+
+    # 2. Test login with AdminTrustMesh2026!
+    res2 = client.post("/api/auth/login", json={"email": admin_email, "password": "AdminTrustMesh2026!"})
+    assert res2.status_code == 200
+    token2 = res2.json()["access_token"]
+    assert bool(token2)
+
+    # 3. Test access to admin endpoints with token and aliases
+    res_metrics = client.get("/api/admin/metrics", headers={"Authorization": f"Bearer {token1}"})
+    assert res_metrics.status_code == 200
+
+    res_deliveries = client.get("/api/admin/email-deliveries", headers={"Authorization": f"Bearer {token1}"})
+    assert res_deliveries.status_code == 200
+
+    res_emails_alias = client.get("/api/admin/emails", headers={"Authorization": f"Bearer {token1}"})
+    assert res_emails_alias.status_code == 200

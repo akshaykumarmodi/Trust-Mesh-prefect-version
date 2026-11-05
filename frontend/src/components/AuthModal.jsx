@@ -43,6 +43,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       const res = await api.login({ email, password });
       localStorage.setItem('trustmesh_token', res.access_token);
       localStorage.setItem('trustmesh_user', JSON.stringify(res.user));
+      window.dispatchEvent(new Event('trustmesh_auth_changed'));
       setSuccessMsg(`Welcome back, ${res.user.name || res.user.email}!`);
       setTimeout(() => {
         onAuthSuccess(res.user);
@@ -116,6 +117,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       github_username: 'akshaymodi'
     };
     localStorage.setItem('trustmesh_user', JSON.stringify(mockAdminUser));
+    window.dispatchEvent(new Event('trustmesh_auth_changed'));
     setSuccessMsg('Admin Key authorized. Full monitoring access granted.');
     setTimeout(() => {
       onAuthSuccess(mockAdminUser);
@@ -125,7 +127,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
   const fillAdminCredentials = () => {
     setEmail('akshay123modi@gmail.com');
-    setPassword('AdminTrustMesh2026!');
+    setPassword('TrustMesh2026!');
     setMode('signin');
   };
 

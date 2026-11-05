@@ -1,7 +1,17 @@
+import sys
+from pathlib import Path
+
+# Ensure backend directory is in sys.path so app can be run from anywhere without ModuleNotFoundError
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from app.core.config import settings, _ROOT_DIR
 from app.database.session import engine, Base, SessionLocal
 from app.services.seed_data import seed_database
 
@@ -108,6 +118,72 @@ def health_check():
         "tagline": "Trust should travel. Evidence should speak.",
         "model_integration": settings.AI_MODEL_NAME
     }
+
+# ---------------------------------------------------------------------------
+# Combined Full-Stack Serving (FastAPI Backend + React Frontend SPA)
+# ---------------------------------------------------------------------------
+_FRONTEND_DIST = _ROOT_DIR / "frontend" / "dist"
+if not _FRONTEND_DIST.is_dir():
+    _alt1 = Path("frontend/dist").resolve()
+    _alt2 = Path("dist").resolve()
+    if _alt1.is_dir():
+        _FRONTEND_DIST = _alt1
+    elif _alt2.is_dir():
+        _FRONTEND_DIST = _alt2
+
+if _FRONTEND_DIST.is_dir():
+    _assets_dir = _FRONTEND_DIST / "assets"
+    if _assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_root_spa():
+        index_file = _FRONTEND_DIST / "index.html"
+        if index_file.is_file():
+            return FileResponse(str(index_file))
+        return {
+            "status": "online",
+            "service": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "notice": "Frontend build index.html not found. Run 'npm run build'."
+        }
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa_frontend(full_path: str):
+        # Guard API, health, docs, and schema routes against SPA fallback
+        if (
+            full_path == "api"
+            or full_path.startswith("api/")
+            or full_path == "health"
+            or full_path.startswith("health/")
+            or full_path == "docs"
+            or full_path.startswith("docs/")
+            or full_path == "redoc"
+            or full_path.startswith("redoc/")
+            or full_path == "openapi.json"
+        ):
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        # Serve static file if it exists in frontend/dist (e.g. favicon.svg, icons.svg)
+        file_path = _FRONTEND_DIST / full_path
+        if full_path and file_path.is_file():
+            return FileResponse(str(file_path))
+
+        # Client-side SPA routing fallback (e.g. /projects, /contributors, /admin, /graph)
+        index_file = _FRONTEND_DIST / "index.html"
+        if index_file.is_file():
+            return FileResponse(str(index_file))
+
+        raise HTTPException(status_code=404, detail="Frontend file not found")
+else:
+    @app.get("/", include_in_schema=False)
+    def root_no_frontend():
+        return {
+            "status": "online",
+            "service": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "notice": "The website is not built yet. Run './start.sh' or 'npm run build' to build it."
+        }
 
 if __name__ == "__main__":
     import uvicorn

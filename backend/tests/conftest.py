@@ -1,3 +1,10 @@
+import os
+# Ensure test suite runs in isolated test environment without sending real external emails
+os.environ["GMAIL_USER"] = ""
+os.environ["GMAIL_APP_PASSWORD"] = ""
+os.environ["RESEND_API_KEY"] = ""
+os.environ["EMAIL_PROVIDER"] = "auto"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

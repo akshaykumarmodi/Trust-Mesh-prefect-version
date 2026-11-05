@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 import json
+from typing import Optional
 from sqlalchemy import Column, String, Text, Integer, Float, DateTime, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.database.session import Base
 
 def utc_now():
@@ -43,7 +44,7 @@ class Project(Base):
     @property
     def trust_policy(self):
         try:
-            return json.loads(self.trust_policy_json or "{}")
+            return json.loads(str(self.trust_policy_json or "{}"))
         except Exception:
             return {}
 
@@ -76,7 +77,7 @@ class Contributor(Base):
     @property
     def skills(self):
         try:
-            return json.loads(self.skills_json or "[]")
+            return json.loads(str(self.skills_json or "[]"))
         except Exception:
             return []
 
@@ -145,7 +146,7 @@ class CoordinatedCampaign(Base):
     @property
     def affected_projects(self):
         try:
-            return json.loads(self.affected_projects_json or "[]")
+            return json.loads(str(self.affected_projects_json or "[]"))
         except Exception:
             return []
 
@@ -156,7 +157,7 @@ class CoordinatedCampaign(Base):
     @property
     def contributor_ids(self):
         try:
-            return json.loads(self.contributor_ids_json or "[]")
+            return json.loads(str(self.contributor_ids_json or "[]"))
         except Exception:
             return []
 
@@ -167,7 +168,7 @@ class CoordinatedCampaign(Base):
     @property
     def evidence_records(self):
         try:
-            return json.loads(self.evidence_records_json or "[]")
+            return json.loads(str(self.evidence_records_json or "[]"))
         except Exception:
             return []
 
@@ -235,17 +236,17 @@ class GitHubCredential(Base):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(String(64), primary_key=True, index=True) # e.g. "usr-..."
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=True) # None for pure OAuth users
-    name = Column(String(128), default="")
-    github_username = Column(String(128), default="")
-    is_verified = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False, index=True)
-    failed_login_attempts = Column(Integer, default=0)
-    locked_until = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=utc_now)
-    last_login_at = Column(DateTime, nullable=True)
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, index=True) # e.g. "usr-..."
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True) # None for pure OAuth users
+    name: Mapped[str] = mapped_column(String(128), default="")
+    github_username: Mapped[str] = mapped_column(String(128), default="")
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     activity_logs = relationship("ActivityLog", back_populates="user")
 
@@ -253,19 +254,19 @@ class User(Base):
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
-    id = Column(String(64), primary_key=True, index=True) # e.g. "act-..."
-    user_id = Column(String(64), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    user_email = Column(String(255), default="", index=True)
-    user_name = Column(String(128), default="")
-    github_username = Column(String(128), default="")
-    event_type = Column(String(64), nullable=False, index=True)
-    event_description = Column(Text, nullable=False)
-    resource_type = Column(String(64), default="", index=True)
-    resource_id = Column(String(128), default="")
-    project_name = Column(String(128), default="")
-    timestamp = Column(DateTime, default=utc_now, index=True)
-    status = Column(String(32), default="SUCCESS", index=True) # SUCCESS, FAILED, SUSPICIOUS, WARNING
-    metadata_json = Column(Text, default="{}")
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, index=True) # e.g. "act-..."
+    user_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_email: Mapped[str] = mapped_column(String(255), default="", index=True)
+    user_name: Mapped[str] = mapped_column(String(128), default="")
+    github_username: Mapped[str] = mapped_column(String(128), default="")
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    event_description: Mapped[str] = mapped_column(Text, nullable=False)
+    resource_type: Mapped[str] = mapped_column(String(64), default="", index=True)
+    resource_id: Mapped[str] = mapped_column(String(128), default="")
+    project_name: Mapped[str] = mapped_column(String(128), default="")
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="SUCCESS", index=True) # SUCCESS, FAILED, SUSPICIOUS, WARNING
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
 
     user = relationship("User", back_populates="activity_logs")
     email_notifications = relationship("EmailNotification", back_populates="activity_log")
@@ -285,16 +286,16 @@ class ActivityLog(Base):
 class EmailNotification(Base):
     __tablename__ = "email_notifications"
 
-    id = Column(String(64), primary_key=True, index=True) # e.g. "eml-..."
-    activity_log_id = Column(String(64), ForeignKey("activity_logs.id", ondelete="SET NULL"), nullable=True, index=True)
-    recipient = Column(String(255), nullable=False, index=True)
-    subject = Column(String(255), nullable=False)
-    html_content = Column(Text, default="")
-    status = Column(String(32), default="SENT", index=True) # SENT, FAILED, RATE_LIMITED, SIMULATED
-    resend_id = Column(String(128), default="")
-    error_message = Column(Text, default="")
-    attempt_count = Column(Integer, default=1)
-    created_at = Column(DateTime, default=utc_now)
-    sent_at = Column(DateTime, nullable=True)
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, index=True) # e.g. "eml-..."
+    activity_log_id: Mapped[Optional[str]] = mapped_column(String(64), ForeignKey("activity_logs.id", ondelete="SET NULL"), nullable=True, index=True)
+    recipient: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    html_content: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(32), default="SENT", index=True) # SENT, FAILED, RATE_LIMITED, SIMULATED
+    resend_id: Mapped[str] = mapped_column(String(128), default="")
+    error_message: Mapped[str] = mapped_column(Text, default="")
+    attempt_count: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     activity_log = relationship("ActivityLog", back_populates="email_notifications")

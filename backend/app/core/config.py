@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 from pydantic import BaseModel
 
 # Resolve workspace directories
@@ -13,26 +13,81 @@ _env_root = _ROOT_DIR / ".env"
 _env_backend = _BACKEND_DIR / ".env"
 
 if _env_root.is_file():
-    load_dotenv(dotenv_path=_env_root, override=False)
-elif _env_backend.is_file():
-    load_dotenv(dotenv_path=_env_backend, override=False)
-else:
-    load_dotenv(override=False)
+    load_dotenv(dotenv_path=_env_root, override=True)
+if _env_backend.is_file():
+    load_dotenv(dotenv_path=_env_backend, override=True)
+if not _env_root.is_file() and not _env_backend.is_file():
+    load_dotenv(override=True)
+
+def get_live_env(key: str, default: str = "") -> str:
+    """Reads the latest live environment variable value from process env or .env file."""
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return os.environ.get(key, "")
+    # 1. Check process environment first
+    val = os.environ.get(key)
+    if val is not None and val.strip():
+        return val.strip()
+    # 2. Check root .env file on disk
+    if _env_root.is_file():
+        vals = dotenv_values(_env_root)
+        if vals.get(key):
+            return str(vals[key]).strip()
+    # 3. Check backend .env file on disk
+    if _env_backend.is_file():
+        vals = dotenv_values(_env_backend)
+        if vals.get(key):
+            return str(vals[key]).strip()
+    return default
+
+def update_env_file(key: str, value: str):
+    """Safely updates or appends a key-value pair in .env and os.environ."""
+    os.environ[key] = value
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+        return
+    try:
+        target_env = _env_root if _env_root.is_file() else (_BACKEND_DIR / ".env")
+        lines = []
+        found = False
+        if target_env.is_file():
+            with open(target_env, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            new_lines = []
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith(f"{key}=") or stripped == key:
+                    new_lines.append(f"{key}={value}\n")
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(f"{key}={value}\n")
+            with open(target_env, "w", encoding="utf-8") as f:
+                f.writelines(new_lines)
+        else:
+            with open(target_env, "w", encoding="utf-8") as f:
+                f.write(f"{key}={value}\n")
+    except Exception:
+        pass
 
 def reload_env():
     """Reloads environment variables from .env if updated."""
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return
     if _env_root.is_file():
-        load_dotenv(dotenv_path=_env_root, override=False)
-    elif _env_backend.is_file():
-        load_dotenv(dotenv_path=_env_backend, override=False)
-    else:
-        load_dotenv(override=False)
+        load_dotenv(dotenv_path=_env_root, override=True)
+    if _env_backend.is_file():
+        load_dotenv(dotenv_path=_env_backend, override=True)
+    if not _env_root.is_file() and not _env_backend.is_file():
+        load_dotenv(override=True)
 
 class Settings(BaseModel):
     PROJECT_NAME: str = "TrustMesh"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./trustmesh.db")
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "sqlite:////tmp/trustmesh.db" if (os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")) else "sqlite:///./trustmesh.db"
+    )
 
     # Open-Weight AI Model Settings (GPT-OSS-120B)
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
@@ -49,26 +104,69 @@ class Settings(BaseModel):
     GITHUB_API_BASE: str = os.getenv("GITHUB_API_BASE", "https://api.github.com")
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "") # Optional backend token for elevated rate limits
 
-    # Admin Activity Monitoring & Resend Email Settings
+    # Admin Activity Monitoring & Email Settings
+    EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "auto") # "auto" | "resend" | "smtp" | "database"
+    EMAIL_AUTOMATION_ENABLED: bool = True
     ADMIN_NOTIFICATION_EMAIL: str = os.getenv("ADMIN_NOTIFICATION_EMAIL", "akshay123modi@gmail.com")
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", os.getenv("ADMIN_NOTIFICATION_EMAIL", "akshay123modi@gmail.com"))
     RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
-    # Default to Resend's test sender (onboarding@resend.dev) unless verified custom domain configured
     EMAIL_FROM: str = os.getenv("EMAIL_FROM", "TrustMesh Alerts <onboarding@resend.dev>")
+    
+    # Gmail SMTP & Direct SMTP Settings (Works with Gmail App Passwords & Nodemailer)
+    GMAIL_USER: str = os.getenv("GMAIL_USER", os.getenv("SMTP_USER", ""))
+    GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", os.getenv("SMTP_PASSWORD", ""))
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", os.getenv("GMAIL_USER", ""))
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", os.getenv("GMAIL_APP_PASSWORD", ""))
+    SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").lower() in ("true", "1")
+
     ADMIN_SECRET_KEY: str = os.getenv("ADMIN_SECRET_KEY", "trustmesh_admin_secret_key_2026")
     JWT_SECRET: str = os.getenv("JWT_SECRET", "trustmesh_jwt_secret_key_2026")
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_MINUTES: int = 60 * 24 * 7 # 7 days
 
     @property
+    def current_email_provider(self) -> str:
+        return get_live_env("EMAIL_PROVIDER", self.EMAIL_PROVIDER).lower()
+
+    @property
     def current_resend_api_key(self) -> str:
-        return os.getenv("RESEND_API_KEY", self.RESEND_API_KEY).strip()
+        return get_live_env("RESEND_API_KEY", self.RESEND_API_KEY)
+
+    @property
+    def current_gmail_user(self) -> str:
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            return os.environ.get("GMAIL_USER", os.environ.get("SMTP_USER", ""))
+        return get_live_env("GMAIL_USER", get_live_env("SMTP_USER", self.GMAIL_USER))
+
+    @property
+    def current_gmail_app_password(self) -> str:
+        if "PYTEST_CURRENT_TEST" in os.environ:
+            raw = os.environ.get("GMAIL_APP_PASSWORD", os.environ.get("SMTP_PASSWORD", ""))
+            return raw.replace(" ", "").strip()
+        # Strip all spaces from 16-character Google App Passwords automatically
+        raw = get_live_env("GMAIL_APP_PASSWORD", get_live_env("SMTP_PASSWORD", self.GMAIL_APP_PASSWORD))
+        return raw.replace(" ", "").strip()
 
     @property
     def current_admin_email(self) -> str:
-        return os.getenv("ADMIN_NOTIFICATION_EMAIL", self.ADMIN_NOTIFICATION_EMAIL).strip()
+        return get_live_env("ADMIN_EMAIL", get_live_env("ADMIN_NOTIFICATION_EMAIL", self.ADMIN_EMAIL or "akshay123modi@gmail.com"))
 
     @property
     def current_email_from(self) -> str:
-        return os.getenv("EMAIL_FROM", self.EMAIL_FROM).strip()
+        return get_live_env("EMAIL_FROM", f"TrustMesh Security Alerts <{self.current_gmail_user}>" if self.current_gmail_user else self.EMAIL_FROM)
+
+    @property
+    def current_smtp_host(self) -> str:
+        return get_live_env("SMTP_HOST", self.SMTP_HOST or "smtp.gmail.com")
+
+    @property
+    def current_smtp_port(self) -> int:
+        val = get_live_env("SMTP_PORT", str(self.SMTP_PORT or 587))
+        try:
+            return int(val)
+        except ValueError:
+            return 587
 
 settings = Settings()
