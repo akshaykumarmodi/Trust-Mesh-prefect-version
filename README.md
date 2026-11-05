@@ -4,7 +4,7 @@
 > *A new contributor is not automatically suspicious. An allegation is not proof. A trust score must always be explainable.*
 
 [![Problem 07](https://img.shields.io/badge/Problem%2007-A%20Trust%20Network%20Against%20AI%20Slop-06b6d4.svg)](#)
-[![Team Nexora](https://img.shields.io/badge/Team-Nexora-3b82f6.svg)](#)
+[![Author: Akshay Kumar Modi](https://img.shields.io/badge/Author-Akshay%20Kumar%20Modi-3b82f6.svg)](#)
 [![Python 3.13+](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python-emerald.svg)](#)
 [![React 19](https://img.shields.io/badge/Frontend-React%2019%20%7C%20Vite%20%7C%20React%20Flow-8b5cf6.svg)](#)
 [![AI Architecture](https://img.shields.io/badge/AI%20Model-GPT--OSS--120B%20(Open--Weight)-f59e0b.svg)](#)
@@ -32,11 +32,9 @@ Instead of requiring projects to blindly trust each other or an arbitrary scorin
 
 ---
 
-## 2. Team Information — Nexora
+## 2. Author Information
 
-- **Kartik Goyal**
 - **Akshay Kumar Modi**
-- **Avi Garg**
 
 **Selected Track**: Problem 07 — *A Trust Network Against AI Slop*
 **Hackathon Event**: Hacktoberfest 2026
@@ -264,4 +262,4 @@ backend/tests/test_trustmesh.py::test_dynamic_campaign_scan PASSED
 ## 9. License
 
 Licensed under the [Apache License, Version 2.0](LICENSE).
-Copyright (c) 2026 Team Nexora (Kartik Goyal, Akshay Kumar Modi, Avi Garg).
+Copyright (c) 2026 Akshay Kumar Modi.

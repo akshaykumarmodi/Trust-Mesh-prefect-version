@@ -709,7 +709,7 @@ def test_project_imported_notification_maps_actor_and_repository(client, db_sess
             "/api/github/import-repo",
             headers={"Authorization": f"Bearer {token}"},
             json={
-                "repo_url": "https://github.com/nexora-org/trustmesh-core",
+                "repo_url": "https://github.com/trustmesh-org/trustmesh-core",
                 "category": "Core Protocol"
             }
         )
@@ -717,7 +717,7 @@ def test_project_imported_notification_maps_actor_and_repository(client, db_sess
 
     log = db_session.query(ActivityLog).filter(
         ActivityLog.event_type == "GITHUB_REPO_IMPORTED",
-        ActivityLog.project_name == "nexora-org/trustmesh-core"
+        ActivityLog.project_name == "trustmesh-org/trustmesh-core"
     ).first()
     assert log is not None
     assert log.user_email == importer_email
@@ -729,8 +729,8 @@ def test_project_imported_notification_maps_actor_and_repository(client, db_sess
     assert email_notif is not None
     assert "David Thorne" in email_notif.html_content
     assert importer_email in email_notif.html_content
-    assert "nexora-org/trustmesh-core" in email_notif.html_content
-    assert "https://github.com/nexora-org/trustmesh-core" in email_notif.html_content
+    assert "trustmesh-org/trustmesh-core" in email_notif.html_content
+    assert "https://github.com/trustmesh-org/trustmesh-core" in email_notif.html_content
     assert "develop" in email_notif.html_content
     assert "Public Repository Imported" in email_notif.html_content
     assert "N/A" not in email_notif.html_content

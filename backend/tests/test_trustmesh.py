@@ -15,7 +15,7 @@ def test_health_check():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["team"] == "Nexora"
+    assert data["author"] == "Akshay Kumar Modi"
 
 def test_list_projects():
     response = client.get("/api/projects")

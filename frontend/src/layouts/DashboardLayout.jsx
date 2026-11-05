@@ -80,7 +80,7 @@ export default function DashboardLayout({
                   TRUSTMESH
                 </span>
                 <span className="text-[10px] text-cyan-400 font-mono tracking-widest block uppercase">
-                  Team Nexora
+                  Akshay Kumar Modi
                 </span>
               </div>
             )}
