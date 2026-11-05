@@ -8,6 +8,7 @@ from app.models import Vouch, Contributor, Project, User
 from app.schemas import VouchOut, VouchCreate
 from app.services.activity_logger import ActivityLogger
 from app.services.auth_service import optional_current_user
+from app.services.github_service import GitHubService
 
 router = APIRouter(prefix="/vouches", tags=["vouches"])
 
@@ -39,8 +40,8 @@ def submit_vouch(
     user: Optional[User] = Depends(optional_current_user),
     db: Session = Depends(get_db)
 ):
-    # 1. Verify source project exists
-    project = db.query(Project).filter(Project.id == data.source_project_id).first()
+    # 1. Verify source project exists (support flexible lookup by ID, slug, or name)
+    project = GitHubService.find_project(db, data.source_project_id)
     if not project:
         raise HTTPException(status_code=400, detail=f"Source project '{data.source_project_id}' does not exist")
 
@@ -65,15 +66,42 @@ def submit_vouch(
         db.commit()
         db.refresh(contrib)
 
-    # 3. Create vouch record
-    vouch_id = f"vouch-{uuid.uuid4().hex[:8]}"
-    raw_prov = f"{contrib.username}:{data.source_project_id}:{data.reason}:{data.evidence_url}"
+    # 3. Compute deterministic provenance hash
+    raw_prov = f"{contrib.username}:{project.id}:{data.reason.strip()}:{data.evidence_url.strip()}"
     prov_hash = hashlib.sha256(raw_prov.encode()).hexdigest()[:16]
 
+    # Check for existing duplicate vouch (prevent duplicate submissions)
+    existing_vouch = (
+        db.query(Vouch)
+        .filter(
+            Vouch.contributor_id == contrib.id,
+            Vouch.source_project_id == project.id,
+            (Vouch.provenance_hash == prov_hash) | (Vouch.evidence_url == data.evidence_url.strip())
+        )
+        .first()
+    )
+    if existing_vouch:
+        # Return existing vouch idempotently without creating duplicate database records
+        return VouchOut(
+            id=existing_vouch.id,
+            contributor_id=contrib.id,
+            contributor_username=contrib.username,
+            source_project_id=project.id,
+            source_project_name=project.name,
+            reason=existing_vouch.reason,
+            evidence_url=existing_vouch.evidence_url,
+            context=existing_vouch.context or "",
+            confidence=existing_vouch.confidence,
+            provenance_hash=existing_vouch.provenance_hash,
+            created_at=existing_vouch.created_at
+        )
+
+    # 4. Create vouch record
+    vouch_id = f"vouch-{uuid.uuid4().hex[:8]}"
     vouch = Vouch(
         id=vouch_id,
         contributor_id=contrib.id,
-        source_project_id=data.source_project_id,
+        source_project_id=project.id,
         reason=data.reason.strip(),
         evidence_url=data.evidence_url.strip(),
         context=data.context.strip() if data.context else "",

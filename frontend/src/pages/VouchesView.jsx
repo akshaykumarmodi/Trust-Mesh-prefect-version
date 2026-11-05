@@ -31,28 +31,36 @@ export default function VouchesView() {
     confidence: 1.0,
   });
 
-  const loadData = async () => {
+  const loadData = async (showLoadingSkeleton = true) => {
     try {
-      setLoading(true);
+      if (showLoadingSkeleton) setLoading(true);
       const [vList, pList] = await Promise.all([api.getVouches(), api.getProjects()]);
       setVouches(vList);
       setProjects(pList);
-      if (pList.length > 0 && !formData.source_project_id) {
-        setFormData((prev) => ({ ...prev, source_project_id: pList[0].id }));
+      if (pList.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          source_project_id: prev.source_project_id || pList[0].id,
+        }));
       }
     } catch (err) {
       console.error('Failed to load vouches:', err);
     } finally {
-      setLoading(false);
+      if (showLoadingSkeleton) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadData(true);
   }, []);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    }
+    if (submitting) return;
+
     setErrorMsg('');
     setSuccessMsg('');
 
@@ -78,7 +86,17 @@ export default function VouchesView() {
       setSubmitting(true);
       const newVouch = await api.submitVouch({
         ...formData,
+        contributor_username: formData.contributor_username.trim(),
+        reason: formData.reason.trim(),
+        evidence_url: formData.evidence_url.trim(),
+        context: formData.context.trim(),
         confidence: parseFloat(formData.confidence) || 1.0,
+      });
+
+      // Optimistically update list without tearing down the UI
+      setVouches((prev) => {
+        const filtered = prev.filter((v) => v.id !== newVouch.id);
+        return [newVouch, ...filtered];
       });
 
       // Trigger celebratory micro-interaction
@@ -101,7 +119,7 @@ export default function VouchesView() {
         confidence: 1.0,
       });
       setShowForm(false);
-      await loadData();
+      await loadData(false);
     } catch (err) {
       setErrorMsg(err.message || 'Failed to submit vouch.');
     } finally {
@@ -123,6 +141,7 @@ export default function VouchesView() {
         </div>
 
         <button
+          type="button"
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-semibold text-xs tracking-wide shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center gap-2 self-start sm:self-auto transition-all"
         >
@@ -131,11 +150,36 @@ export default function VouchesView() {
         </button>
       </div>
 
-      {/* Success Notification */}
+      {/* Notifications */}
       {successMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-3 animate-in fade-in">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{successMsg}</span>
+        <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccessMsg('')}
+            className="text-emerald-400 hover:text-emerald-200 text-sm font-bold px-1"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMsg('')}
+            className="text-rose-400 hover:text-rose-200 text-sm font-bold px-1"
+          >
+            &times;
+          </button>
         </div>
       )}
 
@@ -147,14 +191,7 @@ export default function VouchesView() {
             <span>Endorse a Contributor (Cryptographic Provenance Preserved)</span>
           </div>
 
-          {errorMsg && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <form onSubmit={handleSubmit} action="#" method="POST" className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-slate-300 font-medium mb-1">
@@ -260,12 +297,22 @@ export default function VouchesView() {
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={submitting}
-                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
               >
-                {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                <span>Record Vouch</span>
+                {submitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Recording Vouch...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Vouch</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

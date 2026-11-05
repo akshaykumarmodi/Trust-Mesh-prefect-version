@@ -35,6 +35,11 @@ async function request(endpoint, options = {}) {
     }
     return await response.json();
   } catch (err) {
+    if (err.name === 'TypeError' && String(err.message).toLowerCase().includes('fetch')) {
+      const offlineErr = new Error('Backend API service is currently unreachable. Please verify network connectivity.');
+      console.error(`[API Network Error] ${endpoint}:`, err);
+      throw offlineErr;
+    }
     console.error(`[API Error] ${endpoint}:`, err);
     throw err;
   }
