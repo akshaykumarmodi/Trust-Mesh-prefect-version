@@ -750,10 +750,10 @@ class EmailService:
         # 2. Self-Owned Autonomous Delivery Engine with Nodemailer & Gmail SMTP
         # Prioritizes Gmail SMTP + Nodemailer (Zero external mediators like Resend/Formspree)
         has_gmail = bool(settings.current_gmail_user and settings.current_gmail_app_password)
-        if "PYTEST_CURRENT_TEST" in os.environ and resend_api_key and explicit_provider not in {"smtp", "gmail", "nodemailer"}:
+        if explicit_provider == "resend" and resend_api_key:
             has_gmail = False
 
-        if has_gmail or not resend_api_key or explicit_provider in {"smtp", "gmail", "nodemailer", "database"}:
+        if (has_gmail and explicit_provider not in {"resend"}) or not resend_api_key or explicit_provider in {"smtp", "gmail", "nodemailer", "database"}:
             smtp_delivered = False
             smtp_detail = ""
             if has_gmail and explicit_provider != "database":
@@ -762,6 +762,26 @@ class EmailService:
                 except Exception as ex:
                     smtp_detail = str(ex)
                     logger.warning(f"Gmail SMTP dispatch note: {ex}")
+
+            # If Gmail SMTP failed (e.g. 550 daily sending limit) and Resend API key is available, attempt seamless cloud failover
+            resend_failed_over = False
+            if not smtp_delivered and resend_api_key and explicit_provider not in {"smtp", "gmail", "database"}:
+                try:
+                    logger.info("Attempting seamless failover to Resend API...")
+                    resend_resp = cls._send_resend_request(
+                        api_key=resend_api_key,
+                        email_from=email_from,
+                        admin_email=admin_email,
+                        subject=subject,
+                        html_body=html_body
+                    )
+                    if resend_resp.status_code in {200, 201}:
+                        resend_data = resend_resp.json()
+                        smtp_delivered = True
+                        resend_failed_over = True
+                        smtp_detail = resend_data.get("id", f"resend-{uuid.uuid4().hex[:8]}")
+                except Exception as resend_ex:
+                    logger.warning(f"Resend failover note: {resend_ex}")
 
             # Save locally to mailbox/.eml and trigger desktop notification
             cls._save_local_mailbox_and_notify(
@@ -777,7 +797,10 @@ class EmailService:
                 sent_at_val = utc_now()
                 err_msg = ""
             elif smtp_delivered:
-                delivery_id = f"gmail-smtp-{uuid.uuid4().hex[:10]}" if not smtp_detail.startswith("gmail-smtp") else smtp_detail
+                if resend_failed_over:
+                    delivery_id = smtp_detail
+                else:
+                    delivery_id = f"gmail-smtp-{uuid.uuid4().hex[:10]}" if not smtp_detail.startswith("gmail-smtp") else smtp_detail
                 status_val = "SENT"
                 sent_at_val = utc_now()
                 err_msg = ""
@@ -785,7 +808,14 @@ class EmailService:
                 delivery_id = f"db-fallback-{uuid.uuid4().hex[:10]}"
                 status_val = "FAILED"
                 sent_at_val = None
-                err_msg = f"Gmail SMTP dispatch attempted but failed: {smtp_detail}. Archived locally in fallback mailbox."
+                if "550" in smtp_detail or "limit exceeded" in smtp_detail.lower():
+                    err_msg = (
+                        f"Gmail daily user sending limit exceeded (550). Google temporarily throttled outbound SMTP for ~24 hours for {settings.current_gmail_user}. "
+                        f"Notification was safely archived in your database audit log and local mailbox. "
+                        f"To bypass Google's limit immediately, set EMAIL_PROVIDER=database in .env or configure a RESEND_API_KEY."
+                    )
+                else:
+                    err_msg = f"Gmail SMTP dispatch attempted but failed: {smtp_detail}. Archived locally in fallback mailbox."
             else:
                 delivery_id = f"sim-{uuid.uuid4().hex[:8]}"
                 status_val = "SIMULATED"
