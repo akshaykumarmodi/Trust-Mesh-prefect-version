@@ -273,12 +273,29 @@ def get_project_pull_requests(
 ):
     """
     Retrieves stored GitHub PR records for a project, with verification badges and commit counts.
+    Supports flexible lookup by project ID, slug, or GitHub repository identifier.
     """
-    project = db.query(Project).filter(Project.id == project_id).first()
+    project = GitHubService.find_project(db, project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        try:
+            project = GitHubService.auto_register_github_project(db, project_id)
+        except Exception:
+            project = None
 
-    query = db.query(GitHubPullRequest).filter(GitHubPullRequest.project_id == project_id)
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Project '{project_id}' is not registered in TrustMesh. Use 'Import GitHub Repo' to register it."
+        )
+
+    query = db.query(GitHubPullRequest).filter(GitHubPullRequest.project_id == project.id)
+    if state and state != "all":
+        query = query.filter(GitHubPullRequest.state == state)
+    if verification_status:
+        query = query.filter(GitHubPullRequest.verification_status == verification_status)
+
+    pulls = query.order_by(GitHubPullRequest.updated_at.desc()).limit(limit).all()
+    return pulls
     if state and state != "all":
         query = query.filter(GitHubPullRequest.state == state)
     if verification_status:
@@ -343,9 +360,9 @@ def verify_pull_request_authenticity(req: GitHubPRVerifyRequest, db: Session = D
     Confirms repo existence, PR existence, owner match, and canonical URL.
     Updates the record in SQLite if present.
     """
-    project = db.query(Project).filter(Project.id == req.project_id).first()
+    project = GitHubService.find_project(db, req.project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Connected project not found")
+        raise HTTPException(status_code=404, detail=f"Connected project '{req.project_id}' not found")
 
     if not project.github_owner or not project.github_repo:
         try:

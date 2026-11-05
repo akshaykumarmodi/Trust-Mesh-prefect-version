@@ -12,6 +12,7 @@ from app.schemas import (
 )
 from app.services.activity_logger import ActivityLogger
 from app.services.auth_service import optional_current_user
+from app.services.github_service import GitHubService
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -21,7 +22,7 @@ def list_projects(db: Session = Depends(get_db)):
 
 @router.get("/{project_id}", response_model=ProjectOut)
 def get_project(project_id: str, db: Session = Depends(get_db)):
-    proj = db.query(Project).filter(Project.id == project_id).first()
+    proj = GitHubService.find_project(db, project_id)
     if not proj:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return proj
@@ -76,7 +77,7 @@ def update_project(
     user: Optional[User] = Depends(optional_current_user),
     db: Session = Depends(get_db)
 ):
-    proj = db.query(Project).filter(Project.id == project_id).first()
+    proj = GitHubService.find_project(db, project_id)
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -126,11 +127,11 @@ def set_project_peer_weight(
     user: Optional[User] = Depends(optional_current_user),
     db: Session = Depends(get_db)
 ):
-    source_proj = db.query(Project).filter(Project.id == project_id).first()
+    source_proj = GitHubService.find_project(db, project_id)
     if not source_proj:
         raise HTTPException(status_code=404, detail="Source project not found")
 
-    target_proj = db.query(Project).filter(Project.id == peer_data.target_project_id).first()
+    target_proj = GitHubService.find_project(db, peer_data.target_project_id)
     if not target_proj:
         raise HTTPException(status_code=404, detail=f"Target peer project '{peer_data.target_project_id}' not found")
 
@@ -192,12 +193,12 @@ def set_project_peer_weight(
 
 @router.get("/{project_id}/relationships", response_model=ProjectRelationshipOut)
 def get_project_relationships(project_id: str, db: Session = Depends(get_db)):
-    proj = db.query(Project).filter(Project.id == project_id).first()
+    proj = GitHubService.find_project(db, project_id)
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
 
     # Outgoing peers (projects trusted by this project)
-    out_edges = db.query(ProjectTrustEdge).filter(ProjectTrustEdge.source_project_id == project_id).all()
+    out_edges = db.query(ProjectTrustEdge).filter(ProjectTrustEdge.source_project_id == proj.id).all()
     outgoing_peers = []
     for e in out_edges:
         target = db.query(Project).filter(Project.id == e.target_project_id).first()
@@ -209,7 +210,7 @@ def get_project_relationships(project_id: str, db: Session = Depends(get_db)):
         })
 
     # Incoming peers (projects that trust this project)
-    in_edges = db.query(ProjectTrustEdge).filter(ProjectTrustEdge.target_project_id == project_id).all()
+    in_edges = db.query(ProjectTrustEdge).filter(ProjectTrustEdge.target_project_id == proj.id).all()
     incoming_peers = []
     for e in in_edges:
         source = db.query(Project).filter(Project.id == e.source_project_id).first()

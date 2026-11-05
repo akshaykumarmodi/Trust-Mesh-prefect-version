@@ -262,6 +262,29 @@ def seed_database(db: Session, reset: bool = False):
                 }
             }),
             created_at=now - timedelta(days=45)
+        ),
+        Project(
+            id="proj-gh-microsoftdocs-azure-docs",
+            name="MicrosoftDocs/azure-docs",
+            slug="gh-microsoftdocs-azure-docs",
+            description="Open source documentation of Microsoft Azure on GitHub.",
+            repo_url="https://github.com/MicrosoftDocs/azure-docs",
+            category="Infrastructure",
+            stars=10998,
+            is_github_connected=True,
+            github_owner="MicrosoftDocs",
+            github_repo="azure-docs",
+            default_branch="main",
+            visibility="public",
+            trust_policy_json=json.dumps({
+                "strictness": "balanced",
+                "min_confidence": 0.60,
+                "peer_weights": {
+                    "proj-hyperflow": 0.85,
+                    "proj-cloudnative": 0.80
+                }
+            }),
+            created_at=now - timedelta(days=30)
         )
     ]
     db.add_all(projects)

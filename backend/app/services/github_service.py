@@ -4,6 +4,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Tuple, Dict, Any, List, Optional
 import httpx
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models import Project, Contributor, GitHubPullRequest, GitHubCredential
@@ -104,6 +105,8 @@ class GitHubService:
                         "created_at": parse_iso_datetime(data.get("created_at")),
                         "updated_at": parse_iso_datetime(data.get("updated_at")),
                     }
+                elif resp.status_code == 401:
+                    raise RuntimeError("GitHub API authentication failed: invalid or expired GitHub token.")
                 elif resp.status_code == 404:
                     raise ValueError(
                         f"GitHub repository '{owner}/{repo}' not found. Make sure the repository is public or authorize private access."
@@ -177,6 +180,8 @@ class GitHubService:
                             "updated_at": parse_iso_datetime(pr.get("updated_at")),
                         })
                     return results
+                elif resp.status_code == 401:
+                    raise RuntimeError("GitHub API authentication failed: invalid or expired GitHub token.")
                 elif resp.status_code == 404:
                     raise ValueError(f"Repository '{owner}/{repo}' not found on GitHub.")
                 elif resp.status_code in (403, 429):
@@ -297,12 +302,169 @@ class GitHubService:
             }
 
     @classmethod
+    def find_project(cls, db: Session, identifier: str) -> Optional[Project]:
+        """
+        Flexibly resolves a project from various identifier forms:
+        - Exact ID match (e.g. 'proj-gh-microsoftdocs-azure-docs' or 'proj-hyperflow')
+        - Exact slug match (e.g. 'gh-microsoftdocs-azure-docs' or 'hyperflow-engine')
+        - Exact name match (case-insensitive, e.g. 'MicrosoftDocs/azure-docs')
+        - Slug/ID prefix variants (with or without 'proj-', 'gh-', 'proj-gh-')
+        - GitHub repository URL match (e.g. 'https://github.com/MicrosoftDocs/azure-docs')
+        - GitHub owner/repo combination
+        """
+        if not identifier or not isinstance(identifier, str):
+            return None
+
+        clean_id = identifier.strip()
+
+        # 1. Exact ID
+        p = db.query(Project).filter(Project.id == clean_id).first()
+        if p:
+            return p
+
+        # 2. Exact slug
+        p = db.query(Project).filter(Project.slug == clean_id).first()
+        if p:
+            return p
+
+        # 3. Exact name (case-insensitive)
+        p = db.query(Project).filter(func.lower(Project.name) == clean_id.lower()).first()
+        if p:
+            return p
+
+        # 4. Normalized slug / ID variations
+        variants = set()
+        if clean_id.startswith("proj-gh-"):
+            core = clean_id[len("proj-gh-"):]
+            variants.update([core, f"proj-{core}", f"gh-{core}"])
+        elif clean_id.startswith("proj-"):
+            core = clean_id[len("proj-"):]
+            variants.update([core, f"proj-gh-{core}", f"gh-{core}"])
+        elif clean_id.startswith("gh-"):
+            core = clean_id[len("gh-"):]
+            variants.update([core, f"proj-{core}", f"proj-gh-{core}"])
+        else:
+            variants.update([f"proj-{clean_id}", f"gh-{clean_id}", f"proj-gh-{clean_id}"])
+
+        for v in variants:
+            p = db.query(Project).filter((Project.id == v) | (Project.slug == v)).first()
+            if p:
+                return p
+
+        # 5. Check by GitHub owner & repo or repo_url
+        all_projects = db.query(Project).all()
+        clean_lower = clean_id.lower()
+
+        # If clean_id looks like a full URL
+        if "github.com" in clean_lower:
+            try:
+                owner, repo = cls.parse_github_url(clean_id)
+                for proj in all_projects:
+                    if proj.github_owner and proj.github_repo:
+                        if proj.github_owner.lower() == owner.lower() and proj.github_repo.lower() == repo.lower():
+                            return proj
+                    if proj.repo_url and f"{owner.lower()}/{repo.lower()}" in proj.repo_url.lower():
+                        return proj
+            except Exception:
+                pass
+
+        # If clean_id is 'owner/repo'
+        if "/" in clean_id:
+            parts = clean_id.split("/")
+            if len(parts) == 2:
+                owner, repo = parts[0].strip().lower(), parts[1].strip().lower()
+                for proj in all_projects:
+                    if proj.github_owner and proj.github_repo:
+                        if proj.github_owner.lower() == owner and proj.github_repo.lower() == repo:
+                            return proj
+                    if proj.repo_url and f"{owner}/{repo}" in proj.repo_url.lower():
+                        return proj
+
+        # Check existing projects whose owner-repo combination matches clean_lower
+        for proj in all_projects:
+            if proj.github_owner and proj.github_repo:
+                comb1 = f"{proj.github_owner.lower()}-{proj.github_repo.lower()}"
+                comb2 = f"proj-gh-{comb1}"
+                comb3 = f"gh-{comb1}"
+                comb4 = f"proj-{comb1}"
+                if clean_lower in (comb1, comb2, comb3, comb4):
+                    return proj
+
+        return None
+
+    @classmethod
+    def auto_register_github_project(cls, db: Session, identifier: str) -> Optional[Project]:
+        """
+        Attempts to automatically register a GitHub repository if an unregistered identifier is passed.
+        Candidate formats:
+          - 'https://github.com/owner/repo'
+          - 'owner/repo'
+          - 'proj-gh-owner-repo' or 'gh-owner-repo'
+        Safely queries GitHub API to confirm repository existence before importing.
+        """
+        token = cls.get_auth_token(db)
+        candidates: List[Tuple[str, str]] = []
+
+        clean = identifier.strip()
+
+        # Case 1: GitHub URL
+        if "github.com" in clean:
+            try:
+                owner, repo = cls.parse_github_url(clean)
+                candidates.append((owner, repo))
+            except Exception:
+                pass
+
+        # Case 2: owner/repo
+        elif "/" in clean and not clean.startswith("http"):
+            parts = clean.split("/")
+            if len(parts) == 2 and parts[0] and parts[1]:
+                candidates.append((parts[0].strip(), parts[1].strip()))
+
+        # Case 3: proj-gh-... or gh-...
+        elif clean.startswith("proj-gh-") or clean.startswith("gh-"):
+            core = clean.removeprefix("proj-gh-").removeprefix("gh-")
+            tokens = core.split("-")
+            for i in range(1, len(tokens)):
+                cand_owner = "-".join(tokens[:i])
+                cand_repo = "-".join(tokens[i:])
+                candidates.append((cand_owner, cand_repo))
+
+        # Test each candidate against GitHub API
+        for cand_owner, cand_repo in candidates:
+            try:
+                meta = cls.fetch_repo_metadata(cand_owner, cand_repo, token=token)
+                if meta and meta.get("html_url"):
+                    # Confirm that candidate matched the repository name on GitHub
+                    returned_owner = meta.get("owner", "").lower()
+                    returned_repo = meta.get("name", "").lower()
+                    if returned_owner != cand_owner.lower() or returned_repo != cand_repo.lower():
+                        continue
+                    # Check again if it exists by canonical URL
+                    existing = cls.find_project(db, meta["html_url"])
+                    if existing:
+                        return existing
+                    # Import repository safely without extra redundant metadata fetch
+                    proj, _ = cls.import_repository(
+                        db,
+                        repo_url=meta["html_url"],
+                        category="Infrastructure",
+                        prefetched_meta=meta
+                    )
+                    return proj
+            except Exception:
+                continue
+
+        return None
+
+    @classmethod
     def import_repository(
         cls,
         db: Session,
         repo_url: str,
         category: str = "Infrastructure",
         custom_policy: Optional[Dict[str, Any]] = None,
+        prefetched_meta: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Project, int]:
         """
         Imports public GitHub repository into TrustMesh.
@@ -311,14 +473,17 @@ class GitHubService:
         """
         owner, repo = cls.parse_github_url(repo_url)
         token = cls.get_auth_token(db)
-        meta = cls.fetch_repo_metadata(owner, repo, token=token)
+        meta = prefetched_meta or cls.fetch_repo_metadata(owner, repo, token=token)
 
         slug = f"gh-{owner.lower()}-{repo.lower()}"
         canonical_url = meta["html_url"]
+        proj_id = f"proj-gh-{owner.lower()}-{repo.lower()}"
 
-        existing = db.query(Project).filter(
-            (Project.slug == slug) | (Project.repo_url == canonical_url)
-        ).first()
+        existing = (
+            cls.find_project(db, canonical_url)
+            or cls.find_project(db, proj_id)
+            or cls.find_project(db, slug)
+        )
 
         now = datetime.now(timezone.utc)
 
@@ -385,16 +550,34 @@ class GitHubService:
         """
         Fetches and updates PR records in SQLite for a connected project.
         Prevents duplicates, verifies authenticity, and links contributor profiles.
+        Supports flexible lookup by ID, slug, prefix variants, or GitHub owner/repo.
         """
-        project = db.query(Project).filter(Project.id == project_id).first()
+        project = cls.find_project(db, project_id)
         if not project:
-            raise ValueError(f"Project with ID '{project_id}' not found.")
+            project = cls.auto_register_github_project(db, project_id)
+
+        if not project:
+            raise ValueError(
+                f"Project '{project_id}' is not registered in TrustMesh. "
+                f"Please use 'Import GitHub Repo' with the repository URL (e.g. https://github.com/owner/repository) to register it."
+            )
 
         if not project.github_owner or not project.github_repo:
-            owner, repo = cls.parse_github_url(project.repo_url)
-            project.github_owner = owner
-            project.github_repo = repo
-            project.is_github_connected = True
+            if project.repo_url:
+                try:
+                    owner, repo = cls.parse_github_url(project.repo_url)
+                    project.github_owner = owner
+                    project.github_repo = repo
+                    project.is_github_connected = True
+                    db.commit()
+                except Exception:
+                    pass
+
+        if not project.github_owner or not project.github_repo:
+            raise ValueError(
+                f"Project '{project.name}' is not configured with a valid GitHub repository URL. "
+                f"Please configure a valid GitHub URL (e.g. https://github.com/owner/repository) in project settings."
+            )
 
         token = cls.get_auth_token(db)
         pulls = cls.fetch_pull_requests(
