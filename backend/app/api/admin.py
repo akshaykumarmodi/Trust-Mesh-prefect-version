@@ -71,7 +71,7 @@ def get_admin_metrics(
         emails_rate_limited=emails_rate_limited,
         emails_simulated=emails_simulated,
         resend_configured=bool(settings.current_resend_api_key),
-        admin_email=settings.current_admin_email or "akshay123modi@gmail.com"
+        admin_email=settings.current_admin_email or "admin@trustmesh.network"
     )
 
 @router.get("/activities", response_model=ActivityLogsListResponse)
@@ -171,7 +171,7 @@ def trigger_test_email(
     Records the event and delivery attempt in SQLite audit tables.
     """
     reload_env()
-    target_email = req.recipient or settings.current_admin_email or "akshay123modi@gmail.com"
+    target_email = req.recipient or settings.current_admin_email or "admin@trustmesh.network"
     resend_key = settings.current_resend_api_key
 
     activity = ActivityLogger.log(

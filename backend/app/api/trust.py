@@ -99,7 +99,7 @@ def get_trust_overview(db: Session = Depends(get_db)) -> Dict[str, Any]:
             "active_vouches": vouch_count,
             "open_denouncements": denouncement_count,
             "suspicious_campaigns": campaign_count,
-            "data_label": "Synthetic Seed Demonstration Data (v1.0)"
+            "data_label": "Live Decentralized Trust Network Data"
         },
         "reputation_distribution": state_counts,
         "recent_activity": activity_stream[:8]

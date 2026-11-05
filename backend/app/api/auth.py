@@ -373,7 +373,7 @@ def trigger_login_notification(
 
     from app.models import EmailNotification
     notif = db.query(EmailNotification).filter(EmailNotification.activity_log_id == activity.id).first()
-    admin_target = settings.current_admin_email or "akshay123modi@gmail.com"
+    admin_target = settings.current_admin_email or "admin@trustmesh.network"
 
     return LoginNotificationResponse(
         success=True,

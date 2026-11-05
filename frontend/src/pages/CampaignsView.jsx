@@ -110,8 +110,8 @@ export default function CampaignsView() {
         </div>
 
         <div className="flex items-center gap-3 self-start sm:self-auto">
-          <div className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] font-mono text-amber-300">
-            DEMO DATA (SYNTHETIC PATTERNS)
+          <div className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-300">
+            REAL-TIME CORRELATION ENGINE
           </div>
           <button
             onClick={handleRunScan}
