@@ -16,7 +16,7 @@
     "test": "npm run test:backend",
     "test:backend": "PYTHONPATH=backend ./backend/.venv/bin/pytest backend/tests/ -v"
   },
-  "author": "Nexora (Kartik Goyal, Akshay Kumar Modi, Avi Garg)",
+  "author": "Akshay Kumar Modi",
   "license": "Apache-2.0",
   "devDependencies": {
     "concurrently": "^10.0.6"

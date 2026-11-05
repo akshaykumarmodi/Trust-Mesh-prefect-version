@@ -114,7 +114,7 @@ def health_check():
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "team": "Nexora",
+        "author": "Akshay Kumar Modi",
         "tagline": "Trust should travel. Evidence should speak.",
         "model_integration": settings.AI_MODEL_NAME
     }

@@ -16,7 +16,7 @@ def test_user(db_session):
     uid = uuid.uuid4().hex[:8]
     user = User(
         id=f"usr-auto-{uid}",
-        email=f"alex-{uid}@nexora.org",
+        email=f"alex-{uid}@trustmesh.org",
         name=f"Alex Engineer {uid}",
         hashed_password=hash_password("SuperSecretPass123!"),
         is_verified=True,

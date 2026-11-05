@@ -33,7 +33,7 @@ export default function LandingPage({ onEnterApp }) {
                 TRUSTMESH
               </span>
               <span className="text-[10px] text-cyan-400 font-mono tracking-widest uppercase">
-                Team Nexora
+                Akshay Kumar Modi
               </span>
             </div>
           </div>
@@ -363,7 +363,7 @@ export default function LandingPage({ onEnterApp }) {
           </div>
 
           <div className="font-mono text-[11px] text-slate-400">
-            Team Nexora: Kartik Goyal • Akshay Kumar Modi • Avi Garg
+            Author: Akshay Kumar Modi
           </div>
         </div>
       </footer>

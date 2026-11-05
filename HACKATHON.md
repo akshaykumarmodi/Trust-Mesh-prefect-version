@@ -3,14 +3,9 @@ HACKATHON.md
 PROJECT NAME: TRUSTMESH
 TAGLINE: Building a Trust Network Across the Open-Source Ecosystem
 
-1. TEAM INFORMATION
+1. PROJECT & AUTHOR INFORMATION
 
-Team Name: Nexora
-
-Team Members:
- Kartik Goyal
- Akshay Kumar Modi
- Avi Garg
+Author: Akshay Kumar Modi
 
 Selected Problem Statement:
 Problem 07 – A Trust Network Against AI Slop
@@ -207,5 +202,5 @@ Evidence should be transparent.
 Decisions should remain fair.
 
 
-BUILT BY TEAM NEXORA
+BUILT BY AKSHAY KUMAR MODI
 HACKATHON 2026 (Hacktoberfest)

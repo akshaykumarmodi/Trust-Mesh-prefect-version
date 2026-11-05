@@ -429,7 +429,7 @@ class EmailService:
 
             <!-- Footer -->
             <div style="background:#05070a;padding:14px 24px;border-top:1px solid #1e293b;text-align:center;">
-              <span style="font-size:10px;color:#475569;font-family:monospace;">TrustMesh &bull; Problem 07: Trust Network Against AI Slop &bull; Team Nexora</span>
+              <span style="font-size:10px;color:#475569;font-family:monospace;">TrustMesh &bull; Problem 07: Trust Network Against AI Slop</span>
             </div>
           </div>
         </body>
