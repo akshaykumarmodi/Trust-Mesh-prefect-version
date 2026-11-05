@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import inspect, text
 from app.core.config import settings, _ROOT_DIR
 from app.database.session import engine, Base, SessionLocal
+from app.models import Project
 
 # Routers
 from app.api.projects import router as projects_router
@@ -74,6 +75,15 @@ async def lifespan(app: FastAPI):
         run_migrations(engine)
     except Exception as exc:
         print(f"[Lifespan Warning] run_migrations: {exc}")
+
+    # Ensure all serverless worker instances boot with the canonical persistent records
+    try:
+        with SessionLocal() as db:
+            if db.query(Project).count() == 0:
+                from app.services.seed_data import _bootstrap_from_authoritative_seed
+                _bootstrap_from_authoritative_seed(db)
+    except Exception as exc:
+        print(f"[Lifespan Warning] Baseline bootstrap: {exc}")
 
     yield
     # Shutdown

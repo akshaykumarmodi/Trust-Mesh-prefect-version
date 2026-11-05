@@ -21,16 +21,35 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
+const getInitialProjects = () => {
+  try {
+    const cached = sessionStorage.getItem('trustmesh_cached_projects');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return [];
+};
+
 export default function ProjectsView() {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState(getInitialProjects);
+  const projectsRef = useRef(projects);
+  const [loading, setLoading] = useState(() => projects.length === 0);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [syncWarning, setSyncWarning] = useState(null);
   const reqSeq = useRef(0);
+  const abortControllerRef = useRef(null);
   const [editingId, setEditingId] = useState(null);
   const [editPolicy, setEditPolicy] = useState({});
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Keep projectsRef in sync with state
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
 
   // GitHub Integration State
   const [githubStatus, setGithubStatus] = useState(null);
@@ -72,27 +91,53 @@ export default function ProjectsView() {
   const [syncError, setSyncError] = useState('');
   const [syncSuccess, setSyncSuccess] = useState('');
 
-  const loadProjects = async () => {
+  const loadProjects = async (isManualRefresh = false) => {
     const seq = ++reqSeq.current;
-    if (projects.length === 0) setLoading(true);
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    if (projectsRef.current.length === 0) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
     try {
-      const data = await api.getProjects();
+      const data = await api.getProjects({ signal: controller.signal });
       if (seq !== reqSeq.current) return;
-      setProjects(Array.isArray(data) ? data : []);
-      setError(null);
-      setSyncWarning(null);
+
+      const incomingList = Array.isArray(data) ? data : [];
+
+      // Consistency guard against desynchronized serverless instance returning empty array
+      if (incomingList.length === 0 && projectsRef.current.length > 0) {
+        console.warn(`[TrustMesh Guard] Serverless cluster instance returned empty project array. Preserving ${projectsRef.current.length} existing projects.`);
+        setSyncWarning('Remote cluster node returned empty records. Preserving verified projects.');
+      } else {
+        setProjects(incomingList);
+        projectsRef.current = incomingList;
+        try {
+          sessionStorage.setItem('trustmesh_cached_projects', JSON.stringify(incomingList));
+        } catch {}
+        setError(null);
+        setSyncWarning(null);
+      }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       if (seq !== reqSeq.current) return;
       console.error('Failed to load projects:', err);
-      if (projects.length === 0) {
+      if (projectsRef.current.length === 0) {
         setError(err.message || 'Unable to load projects from network.');
       } else {
-        setSyncWarning(err.message || 'Network refresh failed. Displaying cached projects.');
+        setSyncWarning(err.message || 'Network refresh failed. Preserving displayed projects.');
       }
     } finally {
       if (seq === reqSeq.current) {
         setLoading(false);
+        setRefreshing(false);
       }
     }
   };
@@ -109,6 +154,11 @@ export default function ProjectsView() {
   useEffect(() => {
     loadProjects();
     loadGithubStatus();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   const handleStartEdit = (proj) => {
@@ -309,6 +359,15 @@ export default function ProjectsView() {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => loadProjects(true)}
+            disabled={refreshing}
+            className="p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-slate-300 hover:text-white border border-slate-700/80 text-xs flex items-center gap-1.5 transition-all disabled:opacity-50"
+            title="Refresh Projects"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-cyan-400' : ''}`} />
+          </button>
+
           <button
             onClick={() => setShowImportModal(true)}
             className="px-3.5 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-cyan-300 border border-cyan-500/30 font-semibold text-xs tracking-wide shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center gap-2 transition-all"

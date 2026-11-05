@@ -2,7 +2,10 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_B
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function request(endpoint, options = {}, retries = 2) {
+// Deduplication map for concurrent in-flight GET requests
+const inflightGetRequests = new Map();
+
+async function executeRequest(endpoint, options = {}, retries = 2) {
   const url = `${API_BASE}${endpoint}`;
   const method = (options.method || 'GET').toUpperCase();
   const headers = {
@@ -57,6 +60,10 @@ async function request(endpoint, options = {}, retries = 2) {
 
       return await response.json();
     } catch (err) {
+      if (err.name === 'AbortError') {
+        throw err;
+      }
+
       lastError = err;
       const isNetworkErr = err.name === 'TypeError' && String(err.message).toLowerCase().includes('fetch');
 
@@ -83,14 +90,35 @@ async function request(endpoint, options = {}, retries = 2) {
   throw lastError;
 }
 
+async function request(endpoint, options = {}, retries = 2) {
+  const method = (options.method || 'GET').toUpperCase();
+  const cacheKey = `${method}:${endpoint}`;
+
+  // Deduplicate identical in-flight GET requests
+  if (method === 'GET' && !options.signal && inflightGetRequests.has(cacheKey)) {
+    return inflightGetRequests.get(cacheKey);
+  }
+
+  const promise = executeRequest(endpoint, options, retries);
+
+  if (method === 'GET' && !options.signal) {
+    inflightGetRequests.set(cacheKey, promise);
+    promise.finally(() => {
+      inflightGetRequests.delete(cacheKey);
+    });
+  }
+
+  return promise;
+}
+
 export const api = {
   // System & Overview
   getHealth: () => request('/health'),
   getOverview: () => request('/trust/overview'),
 
   // Projects
-  getProjects: () => request('/projects'),
-  getProject: (id) => request(`/projects/${id}`),
+  getProjects: (options = {}) => request('/projects', options),
+  getProject: (id, options = {}) => request(`/projects/${id}`, options),
   createProject: (data) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
   updateProject: (id, data) => request(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   setProjectPeerWeight: (projectId, data) => request(`/projects/${projectId}/peers`, { method: 'POST', body: JSON.stringify(data) }),
