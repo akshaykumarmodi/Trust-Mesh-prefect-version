@@ -127,3 +127,4 @@ def test_migration_tool_idempotency(tmp_path):
     assert second_contributors == first_contributors
     assert second_vouches == first_vouches
     assert second_prs == first_prs
+
