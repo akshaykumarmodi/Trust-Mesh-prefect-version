@@ -70,13 +70,13 @@ def submit_vouch(
     raw_prov = f"{contrib.username}:{project.id}:{data.reason.strip()}:{data.evidence_url.strip()}"
     prov_hash = hashlib.sha256(raw_prov.encode()).hexdigest()[:16]
 
-    # Check for existing duplicate vouch (prevent duplicate submissions)
+    # Check for existing duplicate vouch (exact duplicate submission by provenance hash)
     existing_vouch = (
         db.query(Vouch)
         .filter(
             Vouch.contributor_id == contrib.id,
             Vouch.source_project_id == project.id,
-            (Vouch.provenance_hash == prov_hash) | (Vouch.evidence_url == data.evidence_url.strip())
+            Vouch.provenance_hash == prov_hash
         )
         .first()
     )
