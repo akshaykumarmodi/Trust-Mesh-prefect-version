@@ -1,7 +1,10 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '') : '') + '/api';
 
-async function request(endpoint, options = {}) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function request(endpoint, options = {}, retries = 2) {
   const url = `${API_BASE}${endpoint}`;
+  const method = (options.method || 'GET').toUpperCase();
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -22,27 +25,62 @@ async function request(endpoint, options = {}) {
     ...options,
   };
 
-  try {
-    const response = await fetch(url, config);
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch {
-        errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, config);
+
+      // Handle serverless cold-start and gateway timeouts (502, 503, 504) with safe backoff
+      if ([502, 503, 504].includes(response.status) && method === 'GET' && attempt < retries) {
+        console.warn(`[API Serverless Warning] HTTP ${response.status} on ${endpoint}. Retrying (${attempt + 1}/${retries})...`);
+        await sleep(350 * (attempt + 1));
+        continue;
       }
-      throw new Error(errorData.detail || 'An error occurred during API request');
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+        }
+
+        if (response.status === 401) {
+          console.warn(`[API Auth Warning] Unauthorized request on ${endpoint}`);
+        }
+
+        const err = new Error(errorData.detail || `Request failed with status ${response.status}`);
+        err.status = response.status;
+        err.endpoint = endpoint;
+        throw err;
+      }
+
+      return await response.json();
+    } catch (err) {
+      lastError = err;
+      const isNetworkErr = err.name === 'TypeError' && String(err.message).toLowerCase().includes('fetch');
+
+      // Retry transient network drop on GET requests
+      if (isNetworkErr && method === 'GET' && attempt < retries) {
+        console.warn(`[API Network Warning] Fetch drop for ${endpoint}. Retrying in ${300 * (attempt + 1)}ms...`);
+        await sleep(300 * (attempt + 1));
+        continue;
+      }
+
+      if (isNetworkErr) {
+        const offlineErr = new Error('Backend API service is temporarily unreachable. Please check network connectivity or server status.');
+        offlineErr.status = 0;
+        offlineErr.endpoint = endpoint;
+        console.error(`[API Network Error] ${endpoint}:`, err);
+        throw offlineErr;
+      }
+
+      console.error(`[API Error] ${endpoint}:`, err);
+      throw err;
     }
-    return await response.json();
-  } catch (err) {
-    if (err.name === 'TypeError' && String(err.message).toLowerCase().includes('fetch')) {
-      const offlineErr = new Error('Backend API service is currently unreachable. Please verify network connectivity.');
-      console.error(`[API Network Error] ${endpoint}:`, err);
-      throw offlineErr;
-    }
-    console.error(`[API Error] ${endpoint}:`, err);
-    throw err;
   }
+
+  throw lastError;
 }
 
 export const api = {

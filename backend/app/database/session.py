@@ -6,7 +6,7 @@ is_sqlite = "sqlite" in settings.DATABASE_URL.lower()
 
 engine_kwargs = {}
 if is_sqlite:
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30.0}
 else:
     # Production PostgreSQL connection pool configuration
     # pool_pre_ping=True tests connections prior to checkout to discard stale/idle socket drops in serverless environments
@@ -31,5 +31,8 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

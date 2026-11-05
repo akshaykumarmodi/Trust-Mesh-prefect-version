@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import confetti from 'canvas-confetti';
 import {
@@ -10,12 +10,16 @@ import {
   Hash,
   AlertCircle,
   FolderGit2,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function VouchesView() {
   const [vouches, setVouches] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [syncWarning, setSyncWarning] = useState(null);
+  const reqSeq = useRef(0);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -32,11 +36,17 @@ export default function VouchesView() {
   });
 
   const loadData = async (showLoadingSkeleton = true) => {
+    const seq = ++reqSeq.current;
+    if (showLoadingSkeleton && vouches.length === 0) setLoading(true);
+
     try {
-      if (showLoadingSkeleton) setLoading(true);
       const [vList, pList] = await Promise.all([api.getVouches(), api.getProjects()]);
-      setVouches(vList);
-      setProjects(pList);
+      if (seq !== reqSeq.current) return;
+      setVouches(Array.isArray(vList) ? vList : []);
+      setProjects(Array.isArray(pList) ? pList : []);
+      setError(null);
+      setSyncWarning(null);
+
       if (pList.length > 0) {
         setFormData((prev) => ({
           ...prev,
@@ -44,9 +54,15 @@ export default function VouchesView() {
         }));
       }
     } catch (err) {
+      if (seq !== reqSeq.current) return;
       console.error('Failed to load vouches:', err);
+      if (vouches.length === 0) {
+        setError(err.message || 'Unable to retrieve vouches from network.');
+      } else {
+        setSyncWarning(err.message || 'Background network refresh failed. Preserving current view.');
+      }
     } finally {
-      if (showLoadingSkeleton) setLoading(false);
+      if (seq === reqSeq.current && showLoadingSkeleton) setLoading(false);
     }
   };
 
@@ -319,12 +335,41 @@ export default function VouchesView() {
         </div>
       )}
 
+      {/* Background Refresh Warning */}
+      {syncWarning && (
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{syncWarning} Displaying currently loaded endorsements.</span>
+          </div>
+          <button
+            onClick={() => setSyncWarning(null)}
+            className="text-amber-400 hover:text-white text-xs font-mono px-1.5 py-0.5"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Vouches Table / Cards */}
-      {loading ? (
+      {loading && vouches.length === 0 ? (
         <div className="space-y-3 animate-pulse">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-28 bg-slate-900/60 rounded-2xl border border-slate-800" />
           ))}
+        </div>
+      ) : error && vouches.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl glass-panel border border-rose-500/30 bg-rose-950/10 space-y-4">
+          <AlertTriangle className="w-12 h-12 text-rose-400 mx-auto" />
+          <h3 className="text-base font-bold text-white">Unable to Load Endorsements</h3>
+          <p className="text-xs text-rose-200/80 max-w-md mx-auto">{error}</p>
+          <button
+            onClick={() => loadData(true)}
+            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs inline-flex items-center gap-1.5 transition-all shadow-lg shadow-rose-950/50"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry Connection</span>
+          </button>
         </div>
       ) : vouches.length === 0 ? (
         <div className="p-12 text-center rounded-2xl glass-panel border border-slate-800">
