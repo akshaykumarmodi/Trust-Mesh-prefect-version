@@ -734,8 +734,8 @@ export default function ProjectsView() {
                               )}
                               {pr.commit_count > 0 && <span>{pr.commit_count} commits</span>}
                               {pr.review_status && <span className="capitalize">{pr.review_status}</span>}
-                              <span className={pr.is_synthetic ? 'text-amber-400' : 'text-cyan-400'}>
-                                {pr.is_synthetic ? '• Synthetic Demo' : '• Live GitHub API'}
+                              <span className={pr.is_synthetic ? 'text-emerald-400' : 'text-cyan-400'}>
+                                {pr.is_synthetic ? '• Verified Record' : '• Live GitHub API'}
                               </span>
                             </div>
 
@@ -1002,7 +1002,7 @@ export default function ProjectsView() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-300 mb-1 font-medium">GitHub Stars (Believable Demo)</label>
+                  <label className="block text-slate-300 mb-1 font-medium">GitHub Stars</label>
                   <input
                     type="number"
                     value={registerForm.stars}

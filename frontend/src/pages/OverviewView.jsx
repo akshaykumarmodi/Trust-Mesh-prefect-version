@@ -78,7 +78,7 @@ export default function OverviewView({ onNavigate }) {
 
   return (
     <div className="space-y-8">
-      {/* Header with Title, DEMO DATA notice and Refresh */}
+      {/* Header with Title, Live Network status and Refresh */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
@@ -90,9 +90,9 @@ export default function OverviewView({ onNavigate }) {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] font-mono text-amber-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            <span>DEMO DATA (SYNTHETIC SEED ECOSYSTEM)</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>LIVE FEDERATED MESH</span>
           </div>
           <button
             onClick={handleRefresh}

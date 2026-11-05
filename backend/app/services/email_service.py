@@ -25,7 +25,7 @@ class EmailService:
             return False, ""
 
         # Admin notifications are high-priority: NEVER rate-limit admin account events
-        admin_target = (settings.current_admin_email or "akshay123modi@gmail.com").strip().lower()
+        admin_target = (settings.current_admin_email or "admin@trustmesh.network").strip().lower()
         if user_email and user_email.strip().lower() == admin_target:
             return False, ""
 
@@ -409,7 +409,7 @@ class EmailService:
                 {f"<tr><td style='padding:10px 14px;color:#94a3b8;font-size:12px;border-bottom:1px solid #1e293b;'>Associated Project</td><td style='padding:10px 14px;color:#06b6d4;font-family:monospace;font-size:12px;border-bottom:1px solid #1e293b;'>{project_name}</td></tr>" if project_name else ""}
                 <tr>
                   <td style="padding:10px 14px;color:#94a3b8;font-size:12px;">Admin Notification Target</td>
-                  <td style="padding:10px 14px;color:#94a3b8;font-size:12px;">{settings.current_admin_email or "akshay123modi@gmail.com"}</td>
+                  <td style="padding:10px 14px;color:#94a3b8;font-size:12px;">{settings.current_admin_email or "admin@trustmesh.network"}</td>
                 </tr>
               </table>
 
@@ -677,7 +677,7 @@ class EmailService:
             subject = f"[TrustMesh Alert] {friendly_title} [{activity.event_type}]{target_str}"
 
         # Resolve recipient: target_recipient takes precedence for probes/tests
-        admin_email = activity.metadata_dict.get("target_recipient") or settings.current_admin_email or "akshay123modi@gmail.com"
+        admin_email = activity.metadata_dict.get("target_recipient") or settings.current_admin_email or "admin@trustmesh.network"
         email_from = settings.current_email_from or "TrustMesh Alerts <onboarding@resend.dev>"
         resend_api_key = settings.current_resend_api_key
 

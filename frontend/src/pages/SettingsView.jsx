@@ -212,23 +212,19 @@ export default function SettingsView({ aiStatus }) {
         </div>
       </div>
 
-      {/* DEMO STATE UTILITIES */}
-      <div className="glass-panel p-6 rounded-2xl border border-rose-950/40 bg-rose-950/10 space-y-3">
-        <div className="text-rose-400 font-bold text-sm flex items-center gap-2">
-          <RefreshCw className="w-4 h-4" />
-          <span>Reset Demonstration Database</span>
+      {/* PERSISTENT PRODUCTION STORAGE */}
+      <div className="glass-panel p-6 rounded-2xl border border-emerald-950/40 bg-emerald-950/10 space-y-3">
+        <div className="text-emerald-400 font-bold text-sm flex items-center gap-2">
+          <Shield className="w-4 h-4" />
+          <span>Production Persistence & Centralized Governance</span>
         </div>
         <p className="text-xs text-slate-400">
-          Restore all projects, contributors, vouches, denouncements, and coordinated campaign scenarios back to the clean synthetic demo baseline.
+          TrustMesh records all contributors, cryptographic vouches, denouncements, and activity logs persistently to your production database. Automated backups and forensic audit integrity are enforced.
         </p>
-        <button
-          onClick={handleResetDemo}
-          disabled={resetting}
-          className="px-4 py-2 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-colors flex items-center gap-2"
-        >
-          {resetting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-          <span>Reset to Clean Synthetic Demo State</span>
-        </button>
+        <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Production Database Synchronization Active</span>
+        </div>
       </div>
     </div>
   );

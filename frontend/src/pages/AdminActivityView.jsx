@@ -150,13 +150,13 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
     setTestEmailSending(true);
     setTestEmailResult(null);
     try {
-      const res = await api.sendAdminTestEmail('akshay123modi@gmail.com');
+      const res = await api.sendAdminTestEmail();
       setTestEmailResult({
         success: true,
         message: res.message || 'Notification dispatched successfully',
         status: res.status,
         resend_id: res.notification_id || res.resend_id,
-        recipient: res.admin_email || res.recipient || 'akshay123modi@gmail.com',
+        recipient: res.admin_email || res.recipient || metrics?.admin_email || '',
       });
       // Refresh deliveries
       const emailsData = await api.getAdminEmailDeliveries({ limit: 50 });
@@ -179,7 +179,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
       const res = await api.updateSmtpConfig({
         gmail_user: smtpFormUser,
         gmail_app_password: smtpFormPassword,
-        admin_email: smtpFormAdmin || 'akshay123modi@gmail.com'
+        admin_email: smtpFormAdmin || metrics?.admin_email || ''
       });
       setSmtpFeedback({ success: true, message: res.message || 'Gmail SMTP configuration saved successfully!' });
       const newStatus = await api.getSmtpStatus();
@@ -281,7 +281,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
           </p>
           <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl text-[11px] font-mono text-cyan-300 text-left mb-6">
             <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-1">Configured Admin Target</div>
-            <div>akshay123modi@gmail.com</div>
+            <div>{metrics?.admin_email || 'Configured Administrator'}</div>
           </div>
           <div className="space-y-2.5">
             <button
@@ -334,7 +334,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </div>
             <div className="text-sm font-bold text-cyan-300 font-mono truncate">
-              {metrics?.admin_email || 'akshay123modi@gmail.com'}
+              {metrics?.admin_email || 'Configured Administrator'}
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
               <span>Delivery Engine:</span>
@@ -381,7 +381,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                   </span>
                 )}
                 <div className="text-[11px] text-slate-400 mt-0.5">
-                  Target Recipient: {testEmailResult.recipient || 'akshay123modi@gmail.com'}
+                  Target Recipient: {testEmailResult.recipient || metrics?.admin_email || 'Administrator'}
                 </div>
               </div>
             </div>
@@ -706,7 +706,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
               <span>Real-time Security Threat Radar & Anomaly Detection</span>
             </div>
             <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-              Monitors suspicious login spikes, brute-force attempts against registered accounts, invalid OAuth callbacks, and repeated token tampering. Accounts experiencing ≥3 consecutive failed authentications trigger immediate high-priority admin alert emails to <span className="text-rose-300 font-mono">akshay123modi@gmail.com</span>.
+              Monitors suspicious login spikes, brute-force attempts against registered accounts, invalid OAuth callbacks, and repeated token tampering. Accounts experiencing ≥3 consecutive failed authentications trigger immediate high-priority admin alert emails to <span className="text-rose-300 font-mono">{metrics?.admin_email || 'the authorized administrator'}</span>.
             </p>
           </div>
 
@@ -780,7 +780,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                   <p className="text-xs text-slate-400 mt-0.5">
                     {smtpStatus?.configured
                       ? `Connected as ${smtpStatus.gmail_user} ➔ Dispatches live login alerts to ${smtpStatus.admin_email}`
-                      : `Live email delivery to ${smtpStatus?.admin_email || 'akshay123modi@gmail.com'} requires your Gmail App Password`}
+                      : `Live email delivery to ${smtpStatus?.admin_email || metrics?.admin_email || 'the administrator'} requires your Gmail App Password`}
                   </p>
                 </div>
               </div>
@@ -881,7 +881,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                     <input
                       type="email"
                       required
-                      placeholder="akshay123modi@gmail.com"
+                      placeholder={metrics?.admin_email || "admin@example.com"}
                       value={smtpFormAdmin}
                       onChange={(e) => setSmtpFormAdmin(e.target.value)}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
@@ -1029,7 +1029,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
             </div>
 
             <div className="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-[11px] text-cyan-300 font-mono">
-              Configured Administrator Target: akshay123modi@gmail.com • TrustMesh Governance 2026
+              Configured Administrator Target: {metrics?.admin_email || 'Configured Administrator'} • TrustMesh Governance 2026
             </div>
           </div>
         </div>

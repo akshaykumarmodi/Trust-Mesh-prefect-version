@@ -174,8 +174,8 @@ class Settings(BaseModel):
     # Admin Activity Monitoring & Email Settings
     EMAIL_PROVIDER: str = os.getenv("EMAIL_PROVIDER", "auto") # "auto" | "resend" | "smtp" | "database"
     EMAIL_AUTOMATION_ENABLED: bool = True
-    ADMIN_NOTIFICATION_EMAIL: str = os.getenv("ADMIN_NOTIFICATION_EMAIL", "akshay123modi@gmail.com")
-    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", os.getenv("ADMIN_NOTIFICATION_EMAIL", "akshay123modi@gmail.com"))
+    ADMIN_NOTIFICATION_EMAIL: str = os.getenv("ADMIN_NOTIFICATION_EMAIL", os.getenv("ADMIN_EMAIL", "admin@trustmesh.network"))
+    ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", os.getenv("ADMIN_NOTIFICATION_EMAIL", "admin@trustmesh.network"))
     RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
     EMAIL_FROM: str = os.getenv("EMAIL_FROM", "TrustMesh Alerts <onboarding@resend.dev>")
     
@@ -218,7 +218,7 @@ class Settings(BaseModel):
 
     @property
     def current_admin_email(self) -> str:
-        return get_live_env("ADMIN_EMAIL", get_live_env("ADMIN_NOTIFICATION_EMAIL", self.ADMIN_EMAIL or "akshay123modi@gmail.com"))
+        return get_live_env("ADMIN_EMAIL", get_live_env("ADMIN_NOTIFICATION_EMAIL", self.ADMIN_EMAIL or "admin@trustmesh.network"))
 
     @property
     def current_email_from(self) -> str:

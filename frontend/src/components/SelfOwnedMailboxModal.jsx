@@ -35,7 +35,7 @@ export default function SelfOwnedMailboxModal({ isOpen, onClose }) {
     try {
       setSendingProbe(true);
       setAlertMsg(null);
-      const res = await api.sendAdminTestEmail('akshay123modi@gmail.com');
+      const res = await api.sendAdminTestEmail();
       setAlertMsg({
         type: 'success',
         text: '📧 New email generated and delivered to your self-owned mailbox + macOS desktop notification!'
@@ -74,7 +74,7 @@ export default function SelfOwnedMailboxModal({ isOpen, onClose }) {
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Self-contained inbox for <span className="text-cyan-300 font-mono">akshay123modi@gmail.com</span> &bull; 100% autonomous delivery
+                Self-contained inbox &bull; 100% autonomous local delivery
               </p>
             </div>
           </div>

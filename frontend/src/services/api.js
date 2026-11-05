@@ -187,8 +187,8 @@ export const api = {
     const qs = query.toString() ? `?${query.toString()}` : '';
     return request(`/admin/email-deliveries${qs}`);
   },
-  sendAdminTestEmail: (recipient = 'akshay123modi@gmail.com') =>
-    request('/admin/test-email', { method: 'POST', body: JSON.stringify({ recipient }) }),
+  sendAdminTestEmail: (recipient) =>
+    request('/admin/test-email', { method: 'POST', body: JSON.stringify(recipient ? { recipient } : {}) }),
   getSmtpStatus: () => request('/admin/smtp-status'),
   updateSmtpConfig: (data) => request('/admin/smtp-config', { method: 'POST', body: JSON.stringify(data) }),
   getPrivacyNotice: () => request('/admin/privacy-notice'),

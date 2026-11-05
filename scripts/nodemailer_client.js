@@ -10,7 +10,7 @@ async function main() {
   try {
     const rawUser = process.env.GMAIL_USER || process.env.SMTP_USER || '';
     const rawPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASSWORD || '';
-    const adminEmail = (process.env.ADMIN_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || 'akshay123modi@gmail.com').trim();
+    const adminEmail = (process.env.ADMIN_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || 'admin@trustmesh.network').trim();
 
     const gmailUser = rawUser.trim();
     const gmailAppPassword = rawPass.replace(/\s+/g, '').trim();

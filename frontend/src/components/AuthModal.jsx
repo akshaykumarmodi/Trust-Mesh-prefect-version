@@ -249,17 +249,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               {loading ? 'Authenticating...' : 'Sign In to TrustMesh'}
             </button>
 
-            {/* Quick Demo Fill for Admin */}
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-              <button
-                type="button"
-                onClick={fillAdminCredentials}
-                className="text-cyan-400 hover:text-cyan-300 underline font-mono text-[10px]"
-              >
-                Auto-fill Admin Account (akshay123modi)
-              </button>
-            </div>
-
             <div className="relative py-2 flex items-center justify-center">
               <span className="h-px w-full bg-slate-800"></span>
               <span className="absolute px-2 bg-[#0a0f1d] text-[10px] text-slate-500 uppercase tracking-widest">
@@ -340,7 +329,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <span>Transparent Activity Monitoring Disclosure</span>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed">
-                TrustMesh logs security and cryptographic operations (authentication, repository sync, vouches, denouncements) to prevent coordinated manipulation. Notifications are delivered to the network administrator (<span className="text-cyan-300 font-mono">akshay123modi@gmail.com</span>). Credentials and tokens are never stored or emailed.
+                TrustMesh logs security and cryptographic operations (authentication, repository sync, vouches, denouncements) to prevent coordinated manipulation. Notifications are delivered to the authorized network administrator. Credentials and tokens are never stored or emailed.
               </p>
               <label className="flex items-center gap-2 pt-1 cursor-pointer">
                 <input
@@ -382,14 +371,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 Authorizes direct administrative access via backend <span className="font-mono text-cyan-400">X-Admin-Key</span> header validation.
               </p>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setAdminKey('trustmesh_dev_master_key_2026')}
-              className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono underline block"
-            >
-              Use default development secret key
-            </button>
 
             <button
               type="submit"
