@@ -8,10 +8,12 @@ export default function SelfOwnedMailboxModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [sendingProbe, setSendingProbe] = useState(false);
   const [alertMsg, setAlertMsg] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
 
   const fetchMailbox = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const data = await api.getAdminEmailDeliveries({ limit: 50 });
       const list = data.items || [];
       setEmails(list);
@@ -20,6 +22,7 @@ export default function SelfOwnedMailboxModal({ isOpen, onClose }) {
       }
     } catch (err) {
       console.error('Failed to load self-owned mailbox:', err);
+      setFetchError(err.message || 'Failed to load mailbox');
     } finally {
       setLoading(false);
     }
@@ -129,7 +132,22 @@ export default function SelfOwnedMailboxModal({ isOpen, onClose }) {
           
           {/* Left Column: Email List */}
           <div className="md:col-span-5 border-r border-slate-800/80 overflow-y-auto divide-y divide-slate-800/50 bg-[#060a12]">
-            {emails.length === 0 ? (
+            {loading && emails.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-xs animate-pulse">
+                Loading notifications...
+              </div>
+            ) : fetchError && emails.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <AlertTriangle className="w-6 h-6 text-rose-400 mx-auto" />
+                <p className="text-xs text-rose-300 font-medium">{fetchError}</p>
+                <button
+                  onClick={fetchMailbox}
+                  className="px-3 py-1 rounded-lg bg-rose-600/30 text-rose-200 border border-rose-500/30 text-[11px] hover:bg-rose-600/50 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : emails.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs">
                 No notifications available.
               </div>

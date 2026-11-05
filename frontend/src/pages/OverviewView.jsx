@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import {
   Shield,
@@ -22,34 +22,53 @@ export default function OverviewView({ onNavigate }) {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [refreshWarning, setRefreshWarning] = useState(null);
+  const reqSeq = useRef(0);
 
-  const loadData = async () => {
+  const loadData = async (isManualRefresh = false) => {
+    const seq = ++reqSeq.current;
+    if (isManualRefresh) {
+      setRefreshing(true);
+    } else if (!data) {
+      setLoading(true);
+    }
+
     try {
       const [overview, cmps] = await Promise.all([
         api.getOverview(),
         api.getCampaigns(),
       ]);
+      if (seq !== reqSeq.current) return;
       setData(overview);
       setCampaigns(cmps);
+      setError(null);
+      setRefreshWarning(null);
     } catch (err) {
+      if (seq !== reqSeq.current) return;
       console.error('Failed to load overview:', err);
+      if (!data) {
+        setError(err.message || 'Failed to connect to TrustMesh network.');
+      } else {
+        setRefreshWarning(err.message || 'Background network refresh temporarily failed.');
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (seq === reqSeq.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    loadData();
+    loadData(false);
   }, []);
 
   const handleRefresh = () => {
-    setRefreshing(true);
-    loadData();
+    loadData(true);
   };
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-10 bg-slate-800/60 rounded-xl w-64" />
@@ -62,6 +81,23 @@ export default function OverviewView({ onNavigate }) {
           <div className="lg:col-span-2 h-96 bg-slate-900/60 rounded-2xl" />
           <div className="h-96 bg-slate-900/60 rounded-2xl" />
         </div>
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="p-12 text-center rounded-2xl glass-panel border border-rose-500/30 bg-rose-950/10 space-y-4 max-w-xl mx-auto my-12">
+        <AlertTriangle className="w-12 h-12 text-rose-400 mx-auto" />
+        <h2 className="text-lg font-bold text-white">TrustMesh API Connection Issue</h2>
+        <p className="text-xs text-rose-200/80 leading-relaxed">{error}</p>
+        <button
+          onClick={() => loadData(false)}
+          className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs inline-flex items-center gap-2 transition-all shadow-lg shadow-rose-950/50"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Retry Connection</span>
+        </button>
       </div>
     );
   }
@@ -104,6 +140,22 @@ export default function OverviewView({ onNavigate }) {
           </button>
         </div>
       </div>
+
+      {/* Background Refresh Warning Banner (preserving state without wiping) */}
+      {refreshWarning && (
+        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{refreshWarning} Displaying current verified state.</span>
+          </div>
+          <button
+            onClick={() => setRefreshWarning(null)}
+            className="text-amber-400 hover:text-white text-xs font-mono px-1.5 py-0.5"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
