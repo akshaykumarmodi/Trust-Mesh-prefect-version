@@ -1,5 +1,6 @@
 import os
 import json
+from pathlib import Path
 import pytest
 from unittest.mock import patch
 from datetime import datetime
@@ -110,10 +111,18 @@ def test_migration_tool_idempotency(tmp_path):
     first_vouches = target_db.query(Vouch).count()
     first_prs = target_db.query(GitHubPullRequest).count()
 
-    assert first_projects == 12
-    assert first_contributors == 134
-    assert first_vouches == 12
-    assert first_prs == 152
+    source_engine = create_engine(f"sqlite:///{Path('trustmesh.db').resolve()}")
+    SourceSession = sessionmaker(bind=source_engine)
+    source_db = SourceSession()
+    src_projects = source_db.query(Project).count()
+    src_contributors = source_db.query(Contributor).count()
+    src_vouches = source_db.query(Vouch).count()
+    src_prs = source_db.query(GitHubPullRequest).count()
+
+    assert first_projects == src_projects
+    assert first_contributors == src_contributors
+    assert first_vouches == src_vouches
+    assert first_prs == src_prs
 
     # Second migration run (idempotency verification)
     migrate(sqlite_path="trustmesh.db", postgres_url=target_url, dry_run=False)
