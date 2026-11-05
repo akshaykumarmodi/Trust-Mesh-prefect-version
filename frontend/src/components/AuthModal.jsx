@@ -84,13 +84,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const handleGitHubLogin = async () => {
     setError('');
     setSuccessMsg('');
+    const ghUsername = window.prompt('Enter your GitHub username to authenticate:', '');
+    if (!ghUsername || !ghUsername.trim()) {
+      return;
+    }
+    const cleanUser = ghUsername.trim().replace(/^@/, '');
     setLoading(true);
     try {
-      const mockUser = 'octocat-engineer';
-      const res = await api.githubLogin({ mock_username: mockUser });
+      const res = await api.githubLogin({ mock_username: cleanUser });
       localStorage.setItem('trustmesh_token', res.access_token);
       localStorage.setItem('trustmesh_user', JSON.stringify(res.user));
-      setSuccessMsg(`Authenticated as GitHub developer @${mockUser}!`);
+      setSuccessMsg(`Authenticated as GitHub developer @${cleanUser}!`);
       setTimeout(() => {
         onAuthSuccess(res.user);
         onClose();

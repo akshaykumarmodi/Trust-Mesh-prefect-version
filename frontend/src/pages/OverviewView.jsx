@@ -232,7 +232,12 @@ export default function OverviewView({ onNavigate }) {
             </div>
 
             <div className="space-y-3">
-              {activity.map((item, idx) => (
+              {activity.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-xl border border-slate-800/80">
+                  No recent trust activity recorded. Connect a repository or record endorsements to populate the live provenance log.
+                </div>
+              ) : (
+                activity.map((item, idx) => (
                 <div
                   key={idx}
                   className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-start justify-between gap-3"
@@ -264,7 +269,7 @@ export default function OverviewView({ onNavigate }) {
                     {new Date(item.timestamp).toLocaleDateString()}
                   </span>
                 </div>
-              ))}
+              )))}
             </div>
           </div>
         </div>

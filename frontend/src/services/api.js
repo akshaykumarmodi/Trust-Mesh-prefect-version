@@ -113,7 +113,7 @@ export const api = {
   exportFederationBundle: (projectId) => request(`/federation/export/${projectId}`),
   importFederationBundle: (bundle) => request('/federation/import', { method: 'POST', body: JSON.stringify(bundle) }),
 
-  // AI & Demo Utilities
+  // AI Analysis Engine
   getAIStatus: () => request('/ai/status'),
   explainWithAI: (targetType, targetId, viewingProjectId = null) =>
     request('/ai/explain', {
@@ -124,7 +124,6 @@ export const api = {
         viewing_project_id: viewingProjectId
       })
     }),
-  resetDemoData: () => request('/ai/reset-demo', { method: 'POST' }),
 
   // GitHub Integration
   getGitHubStatus: () => request('/github/status'),

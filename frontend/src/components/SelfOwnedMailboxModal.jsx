@@ -131,7 +131,7 @@ export default function SelfOwnedMailboxModal({ isOpen, onClose }) {
           <div className="md:col-span-5 border-r border-slate-800/80 overflow-y-auto divide-y divide-slate-800/50 bg-[#060a12]">
             {emails.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs">
-                No emails received yet. Click "Send Test Mail" above to dispatch your first notification!
+                No notifications available.
               </div>
             ) : (
               emails.map((eml) => {

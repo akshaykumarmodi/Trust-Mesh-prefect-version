@@ -252,8 +252,16 @@ export default function ContributorsView() {
       ) : contributors.length === 0 ? (
         <div className="p-12 text-center rounded-2xl glass-panel border border-slate-800">
           <HelpCircle className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-white">No contributors match your filter</h3>
-          <p className="text-xs text-slate-400 mt-1">Try relaxing the search query or state selector.</p>
+          <h3 className="text-sm font-semibold text-white">
+            {searchTerm || selectedState !== 'ALL'
+              ? 'No contributors match your filter'
+              : 'No contributors yet. Connect a GitHub repository to start tracking contributors.'}
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">
+            {searchTerm || selectedState !== 'ALL'
+              ? 'Try relaxing the search query or state selector.'
+              : 'Import a public GitHub repository or sync pull requests to start tracking contributors.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -508,7 +516,7 @@ export default function ContributorsView() {
 
                 {selectedContributor.vouches?.length === 0 ? (
                   <div className="p-3 text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800">
-                    No positive vouches recorded yet.
+                    No endorsements yet.
                   </div>
                 ) : (
                   selectedContributor.vouches.map((v) => (
@@ -549,7 +557,7 @@ export default function ContributorsView() {
 
                 {selectedContributor.denouncements?.length === 0 ? (
                   <div className="p-3 text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800">
-                    Zero allegations on record across federated repositories.
+                    No reports have been submitted.
                   </div>
                 ) : (
                   selectedContributor.denouncements.map((d) => (

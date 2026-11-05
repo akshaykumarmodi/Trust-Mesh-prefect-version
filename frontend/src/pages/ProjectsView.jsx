@@ -324,6 +324,14 @@ export default function ProjectsView() {
             <div key={i} className="h-44 bg-slate-900/60 rounded-2xl border border-slate-800" />
           ))}
         </div>
+      ) : projects.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl glass-panel border border-slate-800">
+          <FolderGit2 className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold text-white">No projects connected. Connect your first GitHub repository.</h3>
+          <p className="text-xs text-slate-400 mt-1">
+            Click "Import GitHub Repo" above to link public open-source repositories to the trust mesh.
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {projects.map((proj) => {
@@ -615,6 +623,7 @@ export default function ProjectsView() {
                 ) : projectPulls.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 bg-slate-950/40 rounded-2xl border border-slate-800 space-y-3">
                     <GitPullRequest className="w-8 h-8 text-slate-600 mx-auto" />
+                    <h4 className="text-sm font-semibold text-white">No pull requests found.</h4>
                     <p className="text-xs">No pull requests synchronized for this repository yet.</p>
                     {peeringProj.is_github_connected ? (
                       <button

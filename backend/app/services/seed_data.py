@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.models import (
     Project, Contributor, Vouch, Denouncement, CoordinatedCampaign,
     ProjectTrustEdge, User, ActivityLog, EmailNotification,
@@ -75,17 +76,24 @@ def seed_database(db: Session, reset: bool = False):
         db.query(Project).delete()
         db.commit()
 
+    if db.query(Project).count() > 0:
+        return
+
+    # Attempt to bootstrap full canonical database from authoritative_seed.json if present
+    if _bootstrap_from_authoritative_seed(db):
+        return
+
     # 0. Ensure Admin User exists
-    admin_email = "akshay123modi@gmail.com"
+    admin_email = (settings.current_admin_email or "admin@trustmesh.network").strip().lower()
     admin_user = db.query(User).filter(User.email == admin_email).first()
     if not admin_user:
         from app.services.auth_service import hash_password
         admin_user = User(
-            id="usr-admin-akshay",
+            id="usr-admin-primary",
             email=admin_email,
             hashed_password=hash_password("TrustMesh2026!"),
-            name="Akshay Kumar Modi",
-            github_username="akshaymodi",
+            name="TrustMesh Administrator",
+            github_username="admin",
             is_verified=True,
             is_admin=True,
             failed_login_attempts=0,
@@ -208,13 +216,6 @@ def seed_database(db: Session, reset: bool = False):
         )
         db.add(audit_email)
         db.commit()
-
-    if db.query(Project).count() > 0:
-        return
-
-    # Attempt to bootstrap full canonical database from authoritative_seed.json if present
-    if _bootstrap_from_authoritative_seed(db):
-        return
 
     projects = [
         Project(

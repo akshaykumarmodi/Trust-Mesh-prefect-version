@@ -25,6 +25,7 @@ import {
   RefreshCw,
   Sliders,
   CheckCircle2,
+  Share2,
 } from 'lucide-react';
 
 const nodeTypes = {
@@ -243,6 +244,17 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
           </button>
         </div>
       </div>
+
+      {/* Empty State Overlay */}
+      {!loading && nodes.length === 0 && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm pointer-events-none">
+          <div className="p-8 text-center rounded-2xl glass-panel border border-slate-800 max-w-md pointer-events-auto">
+            <Share2 className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+            <h3 className="text-sm font-semibold text-white">No verified trust relationships available yet.</h3>
+            <p className="text-xs text-slate-400 mt-1">Connect repositories or configure peering trust edges to visualize the mesh topology.</p>
+          </div>
+        </div>
+      )}
 
       {/* Main React Flow Graph Canvas */}
       <ReactFlow

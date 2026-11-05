@@ -163,7 +163,7 @@ def get_current_admin_user(
             admin_user = User(
                 id="usr-admin-default",
                 email=settings.ADMIN_NOTIFICATION_EMAIL,
-                name="Akshay Kumar Modi (Admin)",
+                name="TrustMesh Administrator",
                 is_admin=True,
                 is_verified=True,
                 created_at=utc_now()

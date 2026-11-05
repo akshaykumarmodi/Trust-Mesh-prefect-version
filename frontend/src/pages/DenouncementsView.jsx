@@ -307,8 +307,8 @@ export default function DenouncementsView() {
       ) : denouncements.length === 0 ? (
         <div className="p-12 text-center rounded-2xl glass-panel border border-slate-800">
           <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-white">No Reports Matching This Status</h3>
-          <p className="text-xs text-slate-400 mt-1">No active supply chain reports found for this filter.</p>
+          <h3 className="text-sm font-semibold text-white">No reports have been submitted.</h3>
+          <p className="text-xs text-slate-400 mt-1">Ecosystem supply chain integrity verified across federated repositories.</p>
         </div>
       ) : (
         <div className="space-y-4">

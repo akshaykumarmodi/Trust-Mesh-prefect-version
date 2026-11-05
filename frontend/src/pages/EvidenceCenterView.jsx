@@ -93,8 +93,8 @@ export default function EvidenceCenterView() {
       ) : evidence.length === 0 ? (
         <div className="p-12 text-center rounded-2xl glass-panel border border-slate-800">
           <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-white">No Evidence Records Found</h3>
-          <p className="text-xs text-slate-400 mt-1">Try adjusting the filter or search keywords.</p>
+          <h3 className="text-sm font-semibold text-white">No evidence records available.</h3>
+          <p className="text-xs text-slate-400 mt-1">Submit vouches or denouncements with linked pull request evidence to populate this forensic log.</p>
         </div>
       ) : (
         <div className="space-y-3">
