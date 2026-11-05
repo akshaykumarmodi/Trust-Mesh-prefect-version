@@ -19,8 +19,6 @@ export default function SettingsView({ aiStatus }) {
   const [exportedJson, setExportedJson] = useState('');
   const [importJson, setImportJson] = useState('');
   const [importStatus, setImportStatus] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -64,20 +62,6 @@ export default function SettingsView({ aiStatus }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleResetDemo = async () => {
-    if (!window.confirm('Reset the TrustMesh database back to its synthetic seed state?')) return;
-    try {
-      setResetting(true);
-      await api.resetDemoData();
-      setResetSuccess(true);
-      setTimeout(() => setResetSuccess(false), 3000);
-    } catch (err) {
-      alert(`Reset failed: ${err.message}`);
-    } finally {
-      setResetting(false);
-    }
-  };
-
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Header */}
@@ -89,13 +73,6 @@ export default function SettingsView({ aiStatus }) {
           Export cryptographic bundles, peer with external trust nodes, and manage local AI intelligence configurations.
         </p>
       </div>
-
-      {resetSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400" />
-          <span>Demo database successfully reset to clean synthetic seed state.</span>
-        </div>
-      )}
 
       {/* AI MODEL STATUS */}
       <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
