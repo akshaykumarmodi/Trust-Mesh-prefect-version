@@ -111,10 +111,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     localStorage.setItem('trustmesh_admin_key', adminKey.trim());
     const mockAdminUser = {
       id: 'usr-admin-key',
-      email: 'akshay123modi@gmail.com',
+      email: 'admin@trustmesh.network',
       name: 'TrustMesh Administrator',
       is_admin: true,
-      github_username: 'akshaymodi'
+      github_username: 'admin'
     };
     localStorage.setItem('trustmesh_user', JSON.stringify(mockAdminUser));
     window.dispatchEvent(new Event('trustmesh_auth_changed'));
@@ -123,12 +123,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       onAuthSuccess(mockAdminUser);
       onClose();
     }, 600);
-  };
-
-  const fillAdminCredentials = () => {
-    setEmail('akshay123modi@gmail.com');
-    setPassword('TrustMesh2026!');
-    setMode('signin');
   };
 
   return (
