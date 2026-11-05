@@ -8,3 +8,7 @@ if str(_BACKEND_DIR) not in sys.path:
 
 from app.main import app
 
+handler = app
+__all__ = ["app", "handler"]
+
+

@@ -57,14 +57,26 @@ def run_migrations(bind_engine):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: run auto-migrations, create tables and seed demo data
-    run_migrations(engine)
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+    # Defensive startup ensuring Vercel serverless functions boot cleanly without exit status 1
     try:
-        seed_database(db, reset=False)
-    finally:
-        db.close()
+        run_migrations(engine)
+    except Exception as exc:
+        print(f"[Lifespan Warning] run_migrations: {exc}")
+
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as exc:
+        print(f"[Lifespan Warning] Base.metadata.create_all: {exc}")
+
+    try:
+        db = SessionLocal()
+        try:
+            seed_database(db, reset=False)
+        finally:
+            db.close()
+    except Exception as exc:
+        print(f"[Lifespan Warning] seed_database: {exc}")
+
     yield
     # Shutdown
 
