@@ -535,8 +535,8 @@ class EmailService:
             return True, detail
 
         # 2. Python standard smtplib Gmail SMTP fallback
-        gmail_user = (settings.current_gmail_user or settings.SMTP_USER or "").strip()
-        gmail_pass = (settings.current_gmail_app_password or settings.SMTP_PASSWORD or "").replace(" ", "").strip()
+        gmail_user = settings.current_gmail_user.strip()
+        gmail_pass = settings.current_gmail_app_password.replace(" ", "").strip()
         if not gmail_user or not gmail_pass:
             return False, "GMAIL_USER or GMAIL_APP_PASSWORD not configured in .env."
 

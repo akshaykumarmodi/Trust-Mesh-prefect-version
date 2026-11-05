@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
 from pydantic import BaseModel
@@ -12,12 +13,15 @@ _ROOT_DIR = _BACKEND_DIR.parent
 _env_root = _ROOT_DIR / ".env"
 _env_backend = _BACKEND_DIR / ".env"
 
+is_testing = "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules or any("pytest" in arg for arg in sys.argv)
+override_env = not is_testing
+
 if _env_root.is_file():
-    load_dotenv(dotenv_path=_env_root, override=True)
+    load_dotenv(dotenv_path=_env_root, override=override_env)
 if _env_backend.is_file():
-    load_dotenv(dotenv_path=_env_backend, override=True)
+    load_dotenv(dotenv_path=_env_backend, override=override_env)
 if not _env_root.is_file() and not _env_backend.is_file():
-    load_dotenv(override=True)
+    load_dotenv(override=override_env)
 
 def get_live_env(key: str, default: str = "") -> str:
     """Reads the latest live environment variable value from process env or .env file."""
@@ -95,11 +99,25 @@ def is_filesystem_readonly() -> bool:
 def get_database_url() -> str:
     """
     Returns a production-safe database URL.
+    - Inspects DATABASE_URL, POSTGRES_URL, POSTGRES_PRISMA_URL, and related env vars.
     - Resolves PostgreSQL scheme compatibility (postgres:// -> postgresql://).
-    - If in serverless or read-only filesystem, ensures SQLite path uses /tmp/trustmesh.db.
+    - If in serverless or read-only filesystem without PostgreSQL, ensures SQLite path uses /tmp/trustmesh.db.
     - Automatically copies existing seeded database to /tmp if available.
     """
-    raw_url = os.getenv("DATABASE_URL", "").strip()
+    raw_url = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or os.getenv("POSTGRES_PRISMA_URL")
+        or os.getenv("POSTGRES_URL_NON_POOLING")
+        or ""
+    ).strip()
+
+    if not raw_url:
+        raw_url = (
+            get_live_env("DATABASE_URL")
+            or get_live_env("POSTGRES_URL")
+            or ""
+        ).strip()
 
     # 1. PostgreSQL normalization for SQLAlchemy 2.0+
     if raw_url.startswith("postgres://"):
@@ -107,7 +125,7 @@ def get_database_url() -> str:
     if raw_url.startswith("postgresql://") or raw_url.startswith("mysql://"):
         return raw_url
 
-    # 2. Serverless / Read-only environment handling
+    # 2. Serverless / Read-only environment handling (fallback if no remote DB configured)
     if is_filesystem_readonly() or (raw_url and "sqlite" in raw_url and "/tmp/" not in raw_url and is_filesystem_readonly()):
         tmp_db = Path("/tmp/trustmesh.db")
         # Attempt to copy pre-existing database from repository if available

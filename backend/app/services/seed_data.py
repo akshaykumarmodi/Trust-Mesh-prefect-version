@@ -1,14 +1,63 @@
 import hashlib
 import json
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from sqlalchemy.orm import Session
 from app.models import (
     Project, Contributor, Vouch, Denouncement, CoordinatedCampaign,
-    ProjectTrustEdge, User, ActivityLog, EmailNotification
+    ProjectTrustEdge, User, ActivityLog, EmailNotification,
+    GitHubCredential, GitHubPullRequest
 )
 
 def make_hash(data: str) -> str:
     return hashlib.sha256(data.encode()).hexdigest()[:16]
+
+def _bootstrap_from_authoritative_seed(db: Session) -> bool:
+    seed_path = Path(__file__).resolve().parent.parent / "database" / "authoritative_seed.json"
+    if not seed_path.is_file():
+        return False
+    try:
+        with open(seed_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        ordered_models = [
+            User,
+            Project,
+            Contributor,
+            GitHubCredential,
+            ProjectTrustEdge,
+            Vouch,
+            Denouncement,
+            CoordinatedCampaign,
+            GitHubPullRequest,
+            ActivityLog,
+            EmailNotification,
+        ]
+
+        total_imported = 0
+        for model in ordered_models:
+            mname = model.__name__
+            records = data.get(mname, [])
+            cols = {c.name: c for c in model.__table__.columns}
+            for rec in records:
+                inst_kwargs = {}
+                for col_name, col in cols.items():
+                    val = rec.get(col_name)
+                    if val is not None and str(col.type).startswith("DATETIME"):
+                        try:
+                            val = datetime.fromisoformat(val)
+                        except Exception:
+                            pass
+                    inst_kwargs[col_name] = val
+                db.merge(model(**inst_kwargs))
+                total_imported += 1
+        db.commit()
+        print(f"[TrustMesh Bootstrap] Successfully bootstrapped {total_imported} canonical records from authoritative_seed.json")
+        return True
+    except Exception as exc:
+        db.rollback()
+        print(f"[TrustMesh Bootstrap Warning] Failed loading authoritative_seed.json: {exc}")
+        return False
 
 def seed_database(db: Session, reset: bool = False):
     now = datetime.now(timezone.utc)
@@ -16,6 +65,7 @@ def seed_database(db: Session, reset: bool = False):
     if reset:
         db.query(EmailNotification).delete()
         db.query(ActivityLog).delete()
+        db.query(GitHubPullRequest).delete()
         db.query(User).delete()
         db.query(Vouch).delete()
         db.query(Denouncement).delete()
@@ -160,6 +210,10 @@ def seed_database(db: Session, reset: bool = False):
         db.commit()
 
     if db.query(Project).count() > 0:
+        return
+
+    # Attempt to bootstrap full canonical database from authoritative_seed.json if present
+    if _bootstrap_from_authoritative_seed(db):
         return
 
     projects = [

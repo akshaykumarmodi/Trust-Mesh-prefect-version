@@ -2,8 +2,18 @@ import os
 # Ensure test suite runs in isolated test environment without sending real external emails
 os.environ["GMAIL_USER"] = ""
 os.environ["GMAIL_APP_PASSWORD"] = ""
+os.environ["SMTP_USER"] = ""
+os.environ["SMTP_PASSWORD"] = ""
 os.environ["RESEND_API_KEY"] = ""
 os.environ["EMAIL_PROVIDER"] = "auto"
+
+from app.core.config import settings
+settings.GMAIL_USER = ""
+settings.GMAIL_APP_PASSWORD = ""
+settings.SMTP_USER = ""
+settings.SMTP_PASSWORD = ""
+settings.RESEND_API_KEY = ""
+settings.EMAIL_PROVIDER = "auto"
 
 import pytest
 from fastapi.testclient import TestClient
