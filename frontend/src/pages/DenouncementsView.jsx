@@ -267,9 +267,10 @@ export default function DenouncementsView() {
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={submitting}
-                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
               >
                 {submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                 <span>Submit Report for Triage</span>
