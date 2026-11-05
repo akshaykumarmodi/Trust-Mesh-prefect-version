@@ -32,6 +32,7 @@ build/
 
 # Local databases
 *.db
+*.db.backup*
 *.sqlite
 *.sqlite3
 
