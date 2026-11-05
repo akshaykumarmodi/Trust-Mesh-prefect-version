@@ -183,7 +183,7 @@ export default function CampaignsView() {
       ) : campaigns.length === 0 ? (
         <div className="p-12 text-center rounded-2xl glass-panel border border-slate-800">
           <Flame className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-white">Zero Active Spam Clusters Detected</h3>
+          <h3 className="text-sm font-semibold text-white">No suspicious campaigns detected.</h3>
           <p className="text-xs text-slate-400 mt-1">Ecosystem topology is currently clean.</p>
         </div>
       ) : (

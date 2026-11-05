@@ -74,11 +74,6 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
       setRefreshing(true);
       setError(null);
 
-      // In development / demo environment, automatically provide master key if no credentials stored
-      if (!localStorage.getItem('trustmesh_token') && !localStorage.getItem('trustmesh_admin_key')) {
-        localStorage.setItem('trustmesh_admin_key', 'trustmesh_dev_master_key_2026');
-      }
-
       const [metricsData, activitiesData, emailsData] = await Promise.all([
         api.getAdminMetrics().catch((err) => {
           if (err.message?.includes('403') || err.message?.includes('401')) {
@@ -909,7 +904,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
           <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-lg">
             {emailDeliveries.length === 0 ? (
               <div className="p-12 text-center text-slate-500 text-xs">
-                No email notifications recorded in audit database yet.
+                No notifications available.
               </div>
             ) : (
               <div className="overflow-x-auto">

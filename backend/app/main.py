@@ -14,7 +14,6 @@ from fastapi.responses import FileResponse
 from sqlalchemy import inspect, text
 from app.core.config import settings, _ROOT_DIR
 from app.database.session import engine, Base, SessionLocal
-from app.services.seed_data import seed_database
 
 # Routers
 from app.api.projects import router as projects_router
@@ -75,15 +74,6 @@ async def lifespan(app: FastAPI):
         run_migrations(engine)
     except Exception as exc:
         print(f"[Lifespan Warning] run_migrations: {exc}")
-
-    try:
-        db = SessionLocal()
-        try:
-            seed_database(db, reset=False)
-        finally:
-            db.close()
-    except Exception as exc:
-        print(f"[Lifespan Warning] seed_database: {exc}")
 
     yield
     # Shutdown
