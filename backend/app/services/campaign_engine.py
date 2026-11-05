@@ -1,7 +1,7 @@
 import re
 import json
 import uuid
-from typing import List, Dict, Any, Set
+from typing import List, Dict, Any, Set, Optional
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from app.models import CoordinatedCampaign, Contributor, Denouncement, Project
@@ -31,7 +31,7 @@ class CampaignDetectionEngine:
         return db.query(CoordinatedCampaign).order_by(CoordinatedCampaign.detected_at.desc()).all()
 
     @staticmethod
-    def get_campaign_by_id(db: Session, campaign_id: str) -> CoordinatedCampaign:
+    def get_campaign_by_id(db: Session, campaign_id: str) -> Optional[CoordinatedCampaign]:
         return db.query(CoordinatedCampaign).filter(CoordinatedCampaign.id == campaign_id).first()
 
     @staticmethod
@@ -39,8 +39,8 @@ class CampaignDetectionEngine:
         campaigns = db.query(CoordinatedCampaign).all()
         denouncements = db.query(Denouncement).all()
 
-        active_investigations = [c for c in campaigns if c.status == "Active Investigation"]
-        confirmed_campaigns = [c for c in campaigns if c.status == "Confirmed Coordinated Abuse"]
+        active_investigations = [c for c in campaigns if getattr(c, "status", "") == "Active Investigation"]
+        confirmed_campaigns = [c for c in campaigns if getattr(c, "status", "") == "Confirmed Coordinated Abuse"]
 
         pattern_clusters: Dict[str, List[Denouncement]] = {}
         for d in denouncements:
@@ -141,7 +141,7 @@ class CampaignDetectionEngine:
             pr_cluster = [pr1]
             for j in range(i + 1, len(github_pulls)):
                 pr2 = github_pulls[j]
-                if pr1.project_id == pr2.project_id:
+                if getattr(pr1, "project_id", "") == getattr(pr2, "project_id", ""):
                     continue # only cross-repo bursts are multi-project slop candidates
 
                 pr_pair_key = tuple(sorted([pr1.id, pr2.id]))
@@ -196,13 +196,20 @@ class CampaignDetectionEngine:
 
                 evidence_list = []
                 for d in cluster["members"]:
-                    proj_name = projects.get(d.reporting_project_id).name if d.reporting_project_id in projects else d.reporting_project_id
+                    proj = projects.get(d.reporting_project_id)
+                    proj_name = str(getattr(proj, "name", "") or d.reporting_project_id) if proj else str(d.reporting_project_id)
                     evidence_list.append({
                         "repo": proj_name,
                         "pr_url": d.evidence_url,
                         "pattern": d.reason,
                         "diff_sample": d.details[:120] if d.details else "Reported anomaly diff"
                     })
+
+                involved_accounts = [
+                    f"@{getattr(contributors[cid], 'username', cid)}"
+                    for cid in cluster["contributors"]
+                    if cid in contributors and getattr(contributors[cid], "username", None) is not None
+                ]
 
                 new_cmp = CoordinatedCampaign(
                     id=f"cmp-{uuid.uuid4().hex[:8]}",
@@ -212,7 +219,7 @@ class CampaignDetectionEngine:
                     description=(
                         f"Deterministic pattern correlator identified synchronized activity "
                         f"across {len(cluster['projects'])} independent repositories. "
-                        f"Involves accounts {', '.join(['@' + contributors[cid].username for cid in cluster['contributors'] if cid in contributors])}. "
+                        f"Involves accounts {', '.join(involved_accounts)}. "
                         "Flagged for human maintainer triage."
                     ),
                     signal_strength=cluster["similarity"],
