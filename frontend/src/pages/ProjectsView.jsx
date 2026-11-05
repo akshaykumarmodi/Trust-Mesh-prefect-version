@@ -66,6 +66,8 @@ export default function ProjectsView() {
   const [projectPulls, setProjectPulls] = useState([]);
   const [pullsLoading, setPullsLoading] = useState(false);
   const [verifyingPrNumber, setVerifyingPrNumber] = useState(null);
+  const [syncError, setSyncError] = useState('');
+  const [syncSuccess, setSyncSuccess] = useState('');
 
   const loadProjects = async () => {
     try {
@@ -181,15 +183,25 @@ export default function ProjectsView() {
   const handleSyncProject = async (projectId) => {
     try {
       setSyncingId(projectId);
+      setSyncError('');
+      setSyncSuccess('');
       const res = await api.syncProjectGitHub(projectId);
-      setSuccessMsg(res.message);
+      const msg = res.message || `Successfully synchronized pull requests for ${res.project_name || projectId}.`;
+      setSuccessMsg(msg);
+      setSyncSuccess(msg);
       await loadProjects();
-      if (peeringProj && peeringProj.id === projectId) {
-        const pulls = await api.getProjectGitHubPulls(projectId);
+      const targetId = res.project_id || projectId;
+      if (peeringProj) {
+        const pulls = await api.getProjectGitHubPulls(targetId);
         setProjectPulls(pulls);
+        if (peeringProj.id !== targetId) {
+          setPeeringProj((prev) => (prev ? { ...prev, id: targetId } : null));
+        }
       }
     } catch (err) {
-      alert(`Sync failed: ${err.message}`);
+      const errMsg = err.message || 'GitHub synchronization failed.';
+      setSyncError(`Sync failed: ${errMsg}`);
+      console.error('GitHub PR sync error:', err);
     } finally {
       setSyncingId(null);
     }
@@ -215,6 +227,8 @@ export default function ProjectsView() {
 
   const handleOpenPeering = async (proj) => {
     setPeeringProj(proj);
+    setSyncError('');
+    setSyncSuccess('');
     setRelationships(null);
     setPeeringTab(proj.is_github_connected ? 'pulls' : 'peering');
     try {
@@ -568,6 +582,30 @@ export default function ProjectsView() {
                     </button>
                   )}
                 </div>
+
+                {syncError && (
+                  <div className="p-3 rounded-xl bg-red-950/70 border border-red-500/40 text-red-300 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>{syncError}</span>
+                    </div>
+                    <button onClick={() => setSyncError('')} className="text-red-400 hover:text-white p-1">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {syncSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{syncSuccess}</span>
+                    </div>
+                    <button onClick={() => setSyncSuccess('')} className="text-emerald-400 hover:text-white p-1">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {pullsLoading ? (
                   <div className="p-8 text-center text-slate-400">

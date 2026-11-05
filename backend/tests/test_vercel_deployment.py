@@ -77,3 +77,4 @@ def test_health_endpoints_and_lifespan():
         res_projects = client.get("/api/projects")
         assert res_projects.status_code == 200
         assert isinstance(res_projects.json(), list)
+
