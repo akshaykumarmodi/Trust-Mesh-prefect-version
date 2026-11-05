@@ -80,14 +80,63 @@ def reload_env():
     if not _env_root.is_file() and not _env_backend.is_file():
         load_dotenv(override=True)
 
+def is_filesystem_readonly() -> bool:
+    """Detects whether running in a serverless or read-only filesystem environment."""
+    if any(os.getenv(k) for k in ("VERCEL", "VERCEL_ENV", "NOW_REGION", "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT")):
+        return True
+    probe = Path("._write_probe.tmp")
+    try:
+        probe.touch()
+        probe.unlink()
+        return False
+    except (OSError, PermissionError):
+        return True
+
+def get_database_url() -> str:
+    """
+    Returns a production-safe database URL.
+    - Resolves PostgreSQL scheme compatibility (postgres:// -> postgresql://).
+    - If in serverless or read-only filesystem, ensures SQLite path uses /tmp/trustmesh.db.
+    - Automatically copies existing seeded database to /tmp if available.
+    """
+    raw_url = os.getenv("DATABASE_URL", "").strip()
+
+    # 1. PostgreSQL normalization for SQLAlchemy 2.0+
+    if raw_url.startswith("postgres://"):
+        return raw_url.replace("postgres://", "postgresql://", 1)
+    if raw_url.startswith("postgresql://") or raw_url.startswith("mysql://"):
+        return raw_url
+
+    # 2. Serverless / Read-only environment handling
+    if is_filesystem_readonly() or (raw_url and "sqlite" in raw_url and "/tmp/" not in raw_url and is_filesystem_readonly()):
+        tmp_db = Path("/tmp/trustmesh.db")
+        # Attempt to copy pre-existing database from repository if available
+        if not tmp_db.is_file():
+            bundled_candidates = [
+                _BACKEND_DIR / "trustmesh.db",
+                _ROOT_DIR / "trustmesh.db",
+                Path("trustmesh.db"),
+            ]
+            for candidate in bundled_candidates:
+                if candidate.is_file():
+                    try:
+                        import shutil
+                        shutil.copyfile(candidate, tmp_db)
+                        break
+                    except Exception:
+                        pass
+        return "sqlite:////tmp/trustmesh.db"
+
+    # 3. Default local development SQLite
+    if raw_url:
+        return raw_url
+    return "sqlite:///./trustmesh.db"
+
 class Settings(BaseModel):
     PROJECT_NAME: str = "TrustMesh"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite:////tmp/trustmesh.db" if (os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")) else "sqlite:///./trustmesh.db"
-    )
+    DATABASE_URL: str = get_database_url()
 
     # Open-Weight AI Model Settings (GPT-OSS-120B)
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
