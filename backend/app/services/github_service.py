@@ -317,20 +317,32 @@ class GitHubService:
 
         clean_id = identifier.strip()
 
+        def _ensure_github_metadata(proj: Project) -> Project:
+            if proj and (not proj.github_owner or not proj.github_repo) and proj.repo_url and "github.com" in proj.repo_url:
+                try:
+                    p_owner, p_repo = cls.parse_github_url(proj.repo_url)
+                    proj.github_owner = p_owner
+                    proj.github_repo = p_repo
+                    proj.is_github_connected = True
+                    db.commit()
+                except Exception:
+                    pass
+            return proj
+
         # 1. Exact ID
         p = db.query(Project).filter(Project.id == clean_id).first()
         if p:
-            return p
+            return _ensure_github_metadata(p)
 
         # 2. Exact slug
         p = db.query(Project).filter(Project.slug == clean_id).first()
         if p:
-            return p
+            return _ensure_github_metadata(p)
 
         # 3. Exact name (case-insensitive)
         p = db.query(Project).filter(func.lower(Project.name) == clean_id.lower()).first()
         if p:
-            return p
+            return _ensure_github_metadata(p)
 
         # 4. Normalized slug / ID variations
         variants = set()
@@ -349,7 +361,7 @@ class GitHubService:
         for v in variants:
             p = db.query(Project).filter((Project.id == v) | (Project.slug == v)).first()
             if p:
-                return p
+                return _ensure_github_metadata(p)
 
         # 5. Check by GitHub owner & repo or repo_url
         all_projects = db.query(Project).all()
@@ -362,9 +374,9 @@ class GitHubService:
                 for proj in all_projects:
                     if proj.github_owner and proj.github_repo:
                         if proj.github_owner.lower() == owner.lower() and proj.github_repo.lower() == repo.lower():
-                            return proj
+                            return _ensure_github_metadata(proj)
                     if proj.repo_url and f"{owner.lower()}/{repo.lower()}" in proj.repo_url.lower():
-                        return proj
+                        return _ensure_github_metadata(proj)
             except Exception:
                 pass
 
@@ -376,9 +388,9 @@ class GitHubService:
                 for proj in all_projects:
                     if proj.github_owner and proj.github_repo:
                         if proj.github_owner.lower() == owner and proj.github_repo.lower() == repo:
-                            return proj
+                            return _ensure_github_metadata(proj)
                     if proj.repo_url and f"{owner}/{repo}" in proj.repo_url.lower():
-                        return proj
+                        return _ensure_github_metadata(proj)
 
         # Check existing projects whose owner-repo combination matches clean_lower
         for proj in all_projects:
@@ -388,7 +400,7 @@ class GitHubService:
                 comb3 = f"gh-{comb1}"
                 comb4 = f"proj-{comb1}"
                 if clean_lower in (comb1, comb2, comb3, comb4):
-                    return proj
+                    return _ensure_github_metadata(proj)
 
         return None
 

@@ -263,7 +263,7 @@ def import_github_repository(
     except RuntimeError as re:
         raise HTTPException(status_code=502, detail=str(re))
 
-@router.get("/projects/{project_id}/pulls", response_model=List[GitHubPullRequestOut])
+@router.get("/projects/{project_id:path}/pulls", response_model=List[GitHubPullRequestOut])
 def get_project_pull_requests(
     project_id: str,
     state: Optional[str] = "all",
@@ -296,15 +296,9 @@ def get_project_pull_requests(
 
     pulls = query.order_by(GitHubPullRequest.updated_at.desc()).limit(limit).all()
     return pulls
-    if state and state != "all":
-        query = query.filter(GitHubPullRequest.state == state)
-    if verification_status:
-        query = query.filter(GitHubPullRequest.verification_status == verification_status)
 
-    pulls = query.order_by(GitHubPullRequest.updated_at.desc()).limit(limit).all()
-    return pulls
 
-@router.post("/projects/{project_id}/sync", response_model=GitHubSyncResponse)
+@router.post("/projects/{project_id:path}/sync", response_model=GitHubSyncResponse)
 def sync_project_pull_requests(
     project_id: str,
     limit: int = 30,

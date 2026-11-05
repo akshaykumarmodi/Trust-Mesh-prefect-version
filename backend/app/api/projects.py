@@ -51,6 +51,16 @@ def create_project(
     if data.trust_policy:
         proj.trust_policy = data.trust_policy
 
+    # Automatically establish GitHub repository identity if repo_url is a GitHub repository
+    if proj.repo_url and "github.com" in proj.repo_url:
+        try:
+            owner, repo = GitHubService.parse_github_url(proj.repo_url)
+            proj.github_owner = owner
+            proj.github_repo = repo
+            proj.is_github_connected = True
+        except Exception:
+            pass
+
     db.add(proj)
     db.commit()
     db.refresh(proj)
@@ -89,6 +99,14 @@ def update_project(
         proj.description = data.description
     if data.repo_url is not None:
         proj.repo_url = data.repo_url
+        if proj.repo_url and "github.com" in proj.repo_url:
+            try:
+                owner, repo = GitHubService.parse_github_url(proj.repo_url)
+                proj.github_owner = owner
+                proj.github_repo = repo
+                proj.is_github_connected = True
+            except Exception:
+                pass
     if data.category is not None:
         proj.category = data.category
     if data.stars is not None:
