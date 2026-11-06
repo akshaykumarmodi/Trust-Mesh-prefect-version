@@ -29,6 +29,8 @@ export default function ExplodingLoader({ onComplete }) {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const hasTriggeredAudio = useRef(false);
   const audioElementRef = useRef(null);
+  const soundButtonRef = useRef(null);
+  const topSoundButtonRef = useRef(null);
 
   // Trigger sound automatically
   const triggerAudio = useCallback(async () => {
@@ -56,12 +58,32 @@ export default function ExplodingLoader({ onComplete }) {
   }, []);
 
   // Multi-tiered automatic start:
-  // 1. Immediate mount attempt (works when domain has interaction or MEI threshold)
+  // 1. Programmatically click sound buttons automatically when entering
   // 2. Global gesture listeners (triggers the instant user touches mouse, screen, or keyboard)
   useEffect(() => {
+    if (soundButtonRef.current) {
+      soundButtonRef.current.click();
+    }
+    if (topSoundButtonRef.current) {
+      topSoundButtonRef.current.click();
+    }
     triggerAudio();
 
+    const t1 = setTimeout(() => {
+      if (soundButtonRef.current) soundButtonRef.current.click();
+      if (topSoundButtonRef.current) topSoundButtonRef.current.click();
+      triggerAudio();
+    }, 50);
+
+    const t2 = setTimeout(() => {
+      if (!hasTriggeredAudio.current) {
+        if (soundButtonRef.current) soundButtonRef.current.click();
+        triggerAudio();
+      }
+    }, 200);
+
     const handleUnlockGesture = () => {
+      if (soundButtonRef.current) soundButtonRef.current.click();
       triggerAudio();
     };
 
@@ -72,6 +94,8 @@ export default function ExplodingLoader({ onComplete }) {
     window.addEventListener('mousemove', handleUnlockGesture, { once: true });
 
     return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
       window.removeEventListener('pointerdown', handleUnlockGesture);
       window.removeEventListener('touchstart', handleUnlockGesture);
       window.removeEventListener('keydown', handleUnlockGesture);
@@ -151,6 +175,7 @@ export default function ExplodingLoader({ onComplete }) {
       {/* Top Controls: Cinema Sound Status & Skip Button */}
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 pointer-events-auto">
         <button
+          ref={topSoundButtonRef}
           onClick={(e) => {
             e.stopPropagation();
             triggerAudio();
@@ -159,7 +184,7 @@ export default function ExplodingLoader({ onComplete }) {
           title="Play energetic movie intro sound"
         >
           <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'text-cyan-400' : 'text-slate-500'}`} />
-          <span>{isPlayingAudio ? 'Cinema Sound: Active' : 'Play Sound'}</span>
+          <span>{isPlayingAudio ? 'Sound: On' : 'Play Sound'}</span>
         </button>
 
         <button
@@ -225,9 +250,10 @@ export default function ExplodingLoader({ onComplete }) {
           <span className="w-1 h-1 rounded-full bg-cyan-400" />
         </div>
 
-        {/* Live Audio Status Indicator / Tap Prompt */}
-        {!isPlayingAudio ? (
+        {/* Audio Trigger Prompt (Automatically clicked on enter) */}
+        {!isPlayingAudio && (
           <button
+            ref={soundButtonRef}
             onClick={(e) => {
               e.stopPropagation();
               triggerAudio();
@@ -235,13 +261,8 @@ export default function ExplodingLoader({ onComplete }) {
             className="mt-4 px-4 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-semibold flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)] animate-pulse transition-all cursor-pointer"
           >
             <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Click to Unmute Cinema Sound 🔊</span>
+            <span>Sound Enabled 🔊</span>
           </button>
-        ) : (
-          <div className="mt-4 flex items-center gap-2 text-[11px] font-mono text-emerald-400">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Dolby / Netflix Cinematic Sound Active</span>
-          </div>
         )}
 
         {/* Minimalist Hairline Progress Bar */}
