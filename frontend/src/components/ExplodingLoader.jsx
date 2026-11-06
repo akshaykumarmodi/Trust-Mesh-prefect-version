@@ -1,142 +1,185 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Shield, Volume2, VolumeX } from 'lucide-react';
+import { Shield, Volume2, VolumeX, Sparkles } from 'lucide-react';
 
 const LETTERS = ['T', 'R', 'U', 'S', 'T', 'M', 'E', 'S', 'H'];
 
 /**
  * Web Audio API Engine: Synthesizes an energetic, deep cinematic movie studio
- * opening sound chord (like the iconic Netflix / HBO / Dolby intro chord with
+ * opening sound (like the iconic Netflix "Ta-dum" / HBO / Dolby intro chord with
  * chest-thumping sub-bass impact, resonant choir/vocal formant shimmer, and specular glint sheen).
  * Zero external downloads, zero latency, 100% offline safe.
  */
-function playMovieIntroSound() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
-    const ctx = new AudioCtx();
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
+function createCinematicMovieSound(ctx) {
+  const now = ctx.currentTime + 0.05; // tiny pre-delay for hardware clock stabilization
 
-    const now = ctx.currentTime;
+  // Master Gain Node
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0.9, now);
+  masterGain.connect(ctx.destination);
 
-    // 1. Initial Soft Pre-Impact Hit ("Ta...")
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(100, now);
-    osc1.frequency.exponentialRampToValueAtTime(45, now + 0.16);
-    gain1.gain.setValueAtTime(0.35, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.22);
-
-    // 2. Powerful Sub-Bass Impact Boom ("...DUM!")
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    const filter2 = ctx.createBiquadFilter();
-    filter2.type = 'lowpass';
-    filter2.frequency.setValueAtTime(170, now + 0.15);
-
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(135, now + 0.15);
-    osc2.frequency.exponentialRampToValueAtTime(32, now + 1.4);
-
-    gain2.gain.setValueAtTime(0.001, now);
-    gain2.gain.setValueAtTime(0.8, now + 0.15);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
-
-    osc2.connect(filter2);
-    filter2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.15);
-    osc2.stop(now + 1.65);
-
-    // 3. Cinematic Vocal / Choir Formant Harmonic Resonance (Warm majestic chords)
-    // Frequencies: D3 (146.8Hz), A3 (220Hz), D4 (293.7Hz), F#4 (370Hz), A4 (440Hz)
-    const chordFreqs = [146.83, 220.0, 293.66, 369.99, 440.0];
-    chordFreqs.forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-
-      osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
-      osc.frequency.setValueAtTime(freq, now + 0.15);
-      osc.detune.setValueAtTime((idx - 2) * 5, now + 0.15);
-
-      // Vocal formant filter (mimics energetic cinematic voice "Aaaahh" resonance)
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1150 + idx * 100, now + 0.15);
-      filter.Q.setValueAtTime(2.4, now + 0.15);
-
-      gain.gain.setValueAtTime(0.001, now + 0.15);
-      gain.gain.linearRampToValueAtTime(0.09 / (idx + 1), now + 0.42);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.85);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now + 0.15);
-      osc.stop(now + 1.9);
-    });
-
-    // 4. Specular Anamorphic Glint Sheen (High-frequency luxury metallic shimmer)
-    const glintTime = now + 0.5;
-    const oscGlint = ctx.createOscillator();
-    const gainGlint = ctx.createGain();
-    const filterGlint = ctx.createBiquadFilter();
-
-    oscGlint.type = 'sine';
-    oscGlint.frequency.setValueAtTime(2000, glintTime);
-    oscGlint.frequency.exponentialRampToValueAtTime(3600, glintTime + 0.35);
-
-    filterGlint.type = 'highpass';
-    filterGlint.frequency.setValueAtTime(1800, glintTime);
-
-    gainGlint.gain.setValueAtTime(0.001, glintTime);
-    gainGlint.gain.linearRampToValueAtTime(0.04, glintTime + 0.12);
-    gainGlint.gain.exponentialRampToValueAtTime(0.0001, glintTime + 0.45);
-
-    oscGlint.connect(filterGlint);
-    filterGlint.connect(gainGlint);
-    gainGlint.connect(ctx.destination);
-    oscGlint.start(glintTime);
-    oscGlint.stop(glintTime + 0.5);
-
-    return ctx;
-  } catch (err) {
-    console.warn('Audio auto-playback deferred until user gesture:', err);
-    return null;
+  // Soft-Clipping Distortion for Rich Analog Movie Theater Warmth
+  const waveShaper = ctx.createWaveShaper();
+  const n_samples = 4096;
+  const curve = new Float32Array(n_samples);
+  for (let i = 0; i < n_samples; ++i) {
+    const x = (i * 2) / n_samples - 1;
+    curve[i] = ((Math.PI + 5) * x) / (Math.PI + 5 * Math.abs(x));
   }
+  waveShaper.curve = curve;
+  waveShaper.connect(masterGain);
+
+  // 1. Initial "Ta..." Impact (110Hz -> 45Hz)
+  const osc1 = ctx.createOscillator();
+  const gain1 = ctx.createGain();
+  osc1.type = 'sine';
+  osc1.frequency.setValueAtTime(110, now);
+  osc1.frequency.exponentialRampToValueAtTime(45, now + 0.16);
+  gain1.gain.setValueAtTime(0.5, now);
+  gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+  osc1.connect(gain1);
+  gain1.connect(waveShaper);
+  osc1.start(now);
+  osc1.stop(now + 0.22);
+
+  // 2. Main Massive Sub-Bass Impact "...DUM!" (+160ms)
+  const subTime = now + 0.16;
+  const osc2 = ctx.createOscillator();
+  const gain2 = ctx.createGain();
+  const filter2 = ctx.createBiquadFilter();
+  filter2.type = 'lowpass';
+  filter2.frequency.setValueAtTime(180, subTime);
+
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(145, subTime);
+  osc2.frequency.exponentialRampToValueAtTime(32, subTime + 1.5);
+
+  gain2.gain.setValueAtTime(0.001, subTime);
+  gain2.gain.linearRampToValueAtTime(0.95, subTime + 0.02);
+  gain2.gain.exponentialRampToValueAtTime(0.001, subTime + 1.7);
+
+  osc2.connect(filter2);
+  filter2.connect(gain2);
+  gain2.connect(waveShaper);
+  osc2.start(subTime);
+  osc2.stop(subTime + 1.75);
+
+  // 3. Energetic Cinematic Choir / Vocal Formant Swell ("Ahhhh")
+  // D Major Triad: D3 (146.8Hz), A3 (220Hz), D4 (293.7Hz), F#4 (370Hz), A4 (440Hz), D5 (587Hz)
+  const chord = [146.83, 220.0, 293.66, 369.99, 440.0, 587.33];
+  chord.forEach((freq, idx) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(freq, subTime);
+    osc.detune.setValueAtTime((idx - 2.5) * 6, subTime);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1200 + idx * 80, subTime);
+    filter.Q.setValueAtTime(2.2, subTime);
+
+    gain.gain.setValueAtTime(0.001, subTime);
+    gain.gain.linearRampToValueAtTime(0.12 / (1 + idx * 0.3), subTime + 0.35);
+    gain.gain.exponentialRampToValueAtTime(0.0001, subTime + 1.9);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(waveShaper);
+    osc.start(subTime);
+    osc.stop(subTime + 1.95);
+  });
+
+  // 4. Specular Anamorphic Glint Sheen (High metallic shimmer as letters assemble)
+  const glintTime = now + 0.5;
+  const oscGlint = ctx.createOscillator();
+  const gainGlint = ctx.createGain();
+  const filterGlint = ctx.createBiquadFilter();
+
+  oscGlint.type = 'sine';
+  oscGlint.frequency.setValueAtTime(2200, glintTime);
+  oscGlint.frequency.exponentialRampToValueAtTime(4200, glintTime + 0.4);
+
+  filterGlint.type = 'highpass';
+  filterGlint.frequency.setValueAtTime(1900, glintTime);
+
+  gainGlint.gain.setValueAtTime(0.001, glintTime);
+  gainGlint.gain.linearRampToValueAtTime(0.06, glintTime + 0.12);
+  gainGlint.gain.exponentialRampToValueAtTime(0.0001, glintTime + 0.48);
+
+  oscGlint.connect(filterGlint);
+  filterGlint.connect(gainGlint);
+  gainGlint.connect(masterGain);
+  oscGlint.start(glintTime);
+  oscGlint.stop(glintTime + 0.52);
 }
 
 export default function ExplodingLoader({ onComplete }) {
   const [progress, setProgress] = useState(0);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const audioContextRef = useRef(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const hasStartedAudio = useRef(false);
+  const audioCtxRef = useRef(null);
 
-  // Trigger cinematic sound on mount
-  useEffect(() => {
-    // Attempt audio playback
-    const ctx = playMovieIntroSound();
-    audioContextRef.current = ctx;
+  // Bulletproof Audio Unlock Engine
+  const startAudio = useCallback(async () => {
+    if (hasStartedAudio.current) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
 
-    return () => {
-      try {
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-          audioContextRef.current.close().catch(() => {});
-        }
-      } catch {}
-    };
+      let ctx = audioCtxRef.current;
+      if (!ctx || ctx.state === 'closed') {
+        ctx = new AudioCtx();
+        audioCtxRef.current = ctx;
+      }
+
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+
+      if (ctx.state === 'running') {
+        hasStartedAudio.current = true;
+        setIsPlayingAudio(true);
+        createCinematicMovieSound(ctx);
+      }
+    } catch (err) {
+      console.warn('[Autoplay Info] Audio awaiting first gesture:', err);
+    }
   }, []);
 
-  // Smooth, snappy loading timeline (~1.85s total - clean and fast)
+  // Multi-pronged auto-start: Immediate attempt + global gesture listeners
+  useEffect(() => {
+    // 1. Attempt automatic immediate playback
+    startAudio();
+
+    // 2. Set up global listeners for ANY interaction to instantly unlock audio
+    const handleAnyGesture = () => {
+      startAudio();
+    };
+
+    window.addEventListener('pointerdown', handleAnyGesture);
+    window.addEventListener('touchstart', handleAnyGesture);
+    window.addEventListener('keydown', handleAnyGesture);
+    window.addEventListener('click', handleAnyGesture);
+    window.addEventListener('mousemove', handleAnyGesture, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleAnyGesture);
+      window.removeEventListener('touchstart', handleAnyGesture);
+      window.removeEventListener('keydown', handleAnyGesture);
+      window.removeEventListener('click', handleAnyGesture);
+      window.removeEventListener('mousemove', handleAnyGesture);
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, [startAudio]);
+
+  // Smooth loading progression timeline (~2.0s total - clean and cinematic)
   useEffect(() => {
     const startTime = Date.now();
-    const duration = 1850;
+    const duration = 2000;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -153,7 +196,7 @@ export default function ExplodingLoader({ onComplete }) {
     }, 16);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [onComplete]);
 
   const handleSkip = useCallback(() => {
     setIsFadingOut(true);
@@ -162,10 +205,10 @@ export default function ExplodingLoader({ onComplete }) {
     }, 120);
   }, [onComplete]);
 
-  // Keyboard shortcut: Escape or Space to skip instantly
+  // Keyboard shortcut: Escape to skip
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' || e.code === 'Space') {
+      if (e.key === 'Escape') {
         handleSkip();
       }
     };
@@ -173,41 +216,36 @@ export default function ExplodingLoader({ onComplete }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSkip]);
 
-  // Click-to-replay sound if user browser blocked initial autoplay
-  const handleToggleSound = (e) => {
-    e.stopPropagation();
-    if (audioEnabled) {
-      setAudioEnabled(false);
-      try {
-        if (audioContextRef.current) audioContextRef.current.suspend().catch(() => {});
-      } catch {}
-    } else {
-      setAudioEnabled(true);
-      playMovieIntroSound();
+  const handleContainerClick = () => {
+    if (!hasStartedAudio.current) {
+      startAudio();
     }
   };
 
   return (
     <div
-      onClick={handleSkip}
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#03060c] overflow-hidden select-none transition-all duration-600 cursor-pointer ${
+      onClick={handleContainerClick}
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#03060c] overflow-hidden select-none transition-all duration-600 ${
         isFadingOut ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Soft, luxury ambient vignette lighting (No chaotic noise) */}
+      {/* Soft, luxury ambient vignette lighting */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.12)_0%,rgba(15,23,42,0.35)_45%,#03060c_75%)] pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
       <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
-      {/* Top Controls: Cinema Sound & Skip Intro */}
+      {/* Top Controls: Cinema Sound Status & Skip Button */}
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 pointer-events-auto">
         <button
-          onClick={handleToggleSound}
+          onClick={(e) => {
+            e.stopPropagation();
+            startAudio();
+          }}
           className="px-3.5 py-1.5 rounded-full bg-slate-900/70 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1.5 backdrop-blur-md cursor-pointer"
-          title="Toggle energetic movie intro sound"
+          title="Play energetic movie intro sound"
         >
-          {audioEnabled ? <Volume2 className="w-3.5 h-3.5 text-cyan-400" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
-          <span>{audioEnabled ? 'Cinema Sound' : 'Muted'}</span>
+          <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'text-cyan-400' : 'text-slate-500'}`} />
+          <span>{isPlayingAudio ? 'Cinema Sound: On' : 'Play Sound'}</span>
         </button>
 
         <button
@@ -274,8 +312,27 @@ export default function ExplodingLoader({ onComplete }) {
           <span className="w-1 h-1 rounded-full bg-cyan-400" />
         </div>
 
+        {/* Live Audio Status Indicator / Tap Prompt */}
+        {!isPlayingAudio ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              startAudio();
+            }}
+            className="mt-4 px-4 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-semibold flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)] animate-pulse transition-all cursor-pointer"
+          >
+            <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Click to Unmute Cinema Sound 🔊</span>
+          </button>
+        ) : (
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-mono text-emerald-400">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Dolby / Netflix Cinematic Sound Active</span>
+          </div>
+        )}
+
         {/* Minimalist Hairline Progress Bar */}
-        <div className="mt-8 w-48 sm:w-60 space-y-2">
+        <div className="mt-6 w-48 sm:w-60 space-y-2">
           <div className="h-[2px] w-full bg-slate-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-75 relative"
