@@ -28,11 +28,22 @@ export default function ExplodingLoader({ onComplete }) {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const hasTriggeredAudio = useRef(false);
+  const audioElementRef = useRef(null);
 
   // Trigger sound automatically
   const triggerAudio = useCallback(async () => {
     if (hasTriggeredAudio.current) return;
     try {
+      if (audioElementRef.current) {
+        audioElementRef.current.volume = 1.0;
+        const playPromise = audioElementRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          hasTriggeredAudio.current = true;
+          setIsPlayingAudio(true);
+          return;
+        }
+      }
       const promise = playGlobalCinemaAudio();
       if (promise && typeof promise.then === 'function') {
         await promise;
@@ -122,6 +133,16 @@ export default function ExplodingLoader({ onComplete }) {
         isFadingOut ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
+      {/* Native HTML5 Audio for Maximum Browser Autoplay Compatibility */}
+      <audio
+        ref={audioElementRef}
+        src="/cinema-intro.wav"
+        preload="auto"
+        autoPlay
+        playsInline
+        onPlay={() => setIsPlayingAudio(true)}
+      />
+
       {/* Soft luxury ambient spotlight */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,rgba(15,23,42,0.4)_45%,#02050b_75%)] pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/85 to-transparent pointer-events-none" />
