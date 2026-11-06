@@ -18,7 +18,7 @@ import {
   FolderGit2,
 } from 'lucide-react';
 
-export default function LandingPage({ onEnterApp }) {
+export default function LandingPage({ onEnterApp, onReplayIntro }) {
   return (
     <div className="min-h-screen bg-[#05070a] text-slate-100 selection:bg-cyan-500/30 font-sans overflow-x-hidden">
       {/* Top Navbar */}
@@ -38,7 +38,18 @@ export default function LandingPage({ onEnterApp }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 pr-14 sm:pr-18">
+          <div className="flex items-center gap-3 sm:gap-4 pr-14 sm:pr-18">
+            {onReplayIntro && (
+              <button
+                onClick={onReplayIntro}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-semibold transition-all cursor-pointer shadow-sm"
+                title="Replay cinematic Netflix-style TrustMesh intro"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Intro Animation</span>
+              </button>
+            )}
+
             <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
               <span className="font-mono text-cyan-300">TRUST NETWORK INITIALIZED</span>
