@@ -346,7 +346,7 @@ export default function ProjectsView() {
     try {
       setDeleteLoading(true);
       setDeleteError('');
-      await api.deleteProject(deletingProject.id);
+      const res = await api.deleteProject(deletingProject.id);
 
       userDeletedRef.current = true;
       const remaining = projects.filter((p) => p.id !== deletingProject.id);
@@ -356,7 +356,8 @@ export default function ProjectsView() {
         sessionStorage.setItem('trustmesh_cached_projects', JSON.stringify(remaining));
       } catch {}
 
-      setSuccessMsg(`Project "${deletingProject.name}" was successfully deleted.`);
+      const msg = res?.message || `Project "${deletingProject.name}" and all associated pull requests were successfully deleted.`;
+      setSuccessMsg(msg);
       setDeletingProject(null);
     } catch (err) {
       console.error('Failed to delete project:', err);
@@ -1310,7 +1311,7 @@ export default function ProjectsView() {
                 Are you sure you want to permanently delete <strong className="text-white font-mono">{deletingProject.name}</strong>?
               </p>
               <p className="text-slate-400 text-[11px] leading-relaxed">
-                This action will remove the project from the TrustMesh ecosystem, along with its associated peering relationships and pull request indices.
+                This action will permanently delete the project from TrustMesh along with all of its associated pull requests, commit records, and peering relationships.
               </p>
             </div>
 
