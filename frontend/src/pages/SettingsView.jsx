@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { playGlobalCinemaAudio } from '../components/ExplodingLoader';
 import {
   Settings,
   Download,
@@ -283,10 +282,7 @@ export default function SettingsView({ aiStatus, theme, onReplayIntro }) {
               <span className="fed-muted text-xs text-slate-400 font-mono">TrustMesh Protocol v1.0.0</span>
               {onReplayIntro && (
                 <button
-                  onClick={() => {
-                    playGlobalCinemaAudio();
-                    onReplayIntro();
-                  }}
+                  onClick={onReplayIntro}
                   className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 transition-all cursor-pointer shadow-sm ml-auto sm:ml-0"
                   title="Replay Netflix-style TrustMesh brand intro animation with sound"
                 >

@@ -1,6 +1,5 @@
 import React from 'react';
 import HeroNetworkCanvas from '../components/HeroNetworkCanvas';
-import { playGlobalCinemaAudio } from '../components/ExplodingLoader';
 import {
   Shield,
   Network,
@@ -20,13 +19,6 @@ import {
 } from 'lucide-react';
 
 export default function LandingPage({ onEnterApp, onReplayIntro }) {
-  const handleEnterWithAudio = (view) => {
-    try {
-      playGlobalCinemaAudio();
-    } catch {}
-    onEnterApp(view);
-  };
-
   return (
     <div className="min-h-screen bg-[#05070a] text-slate-100 selection:bg-cyan-500/30 font-sans overflow-x-hidden">
       {/* Top Navbar */}
@@ -49,10 +41,7 @@ export default function LandingPage({ onEnterApp, onReplayIntro }) {
           <div className="flex items-center gap-3 sm:gap-4 pr-14 sm:pr-18">
             {onReplayIntro && (
               <button
-                onClick={() => {
-                  playGlobalCinemaAudio();
-                  onReplayIntro();
-                }}
+                onClick={onReplayIntro}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-semibold transition-all cursor-pointer shadow-sm"
                 title="Replay cinematic Netflix-style TrustMesh intro with sound"
               >
@@ -67,7 +56,7 @@ export default function LandingPage({ onEnterApp, onReplayIntro }) {
             </div>
 
             <button
-              onClick={() => handleEnterWithAudio('overview')}
+              onClick={() => onEnterApp('overview')}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs tracking-wide shadow-[0_0_20px_rgba(6,182,212,0.3)] transition-all hover:scale-105 active:scale-95"
             >
               Enter TrustMesh
@@ -108,7 +97,7 @@ export default function LandingPage({ onEnterApp, onReplayIntro }) {
           {/* Action CTAs */}
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <button
-              onClick={() => handleEnterWithAudio('network')}
+              onClick={() => onEnterApp('network')}
               className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-sm shadow-[0_0_28px_rgba(6,182,212,0.4)] flex items-center gap-2.5 transition-all hover:scale-105"
             >
               <Network className="w-4 h-4" />
@@ -116,7 +105,7 @@ export default function LandingPage({ onEnterApp, onReplayIntro }) {
             </button>
 
             <button
-              onClick={() => handleEnterWithAudio('overview')}
+              onClick={() => onEnterApp('overview')}
               className="px-7 py-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-cyan-500/50 font-semibold text-sm flex items-center gap-2.5 transition-all"
             >
               <span>View Intelligence Dashboard</span>
@@ -366,7 +355,7 @@ export default function LandingPage({ onEnterApp, onReplayIntro }) {
           </p>
 
           <button
-            onClick={() => handleEnterWithAudio('overview')}
+            onClick={() => onEnterApp('overview')}
             className="mt-8 px-9 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm tracking-wide shadow-[0_0_32px_rgba(6,182,212,0.4)] transition-all hover:scale-105"
           >
             Enter TrustMesh
