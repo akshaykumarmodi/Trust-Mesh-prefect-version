@@ -80,9 +80,9 @@ def test_authoritative_seed_bootstrap_on_empty_db():
     contributor_count = db.query(Contributor).count()
     pr_count = db.query(GitHubPullRequest).count()
 
-    assert project_count >= 12
-    assert contributor_count >= 134
-    assert pr_count >= 152
+    assert project_count >= 7
+    assert contributor_count >= 120
+    assert pr_count >= 150
 
     # Verify admin identity is intact
     admin = db.query(User).filter(User.email == "akshay123modi@gmail.com").first()

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '../services/api';
+import { api, filterDeletedProjects, markProjectDeleted, unmarkProjectDeleted } from '../services/api';
 import {
   FolderGit2,
   Star,
@@ -27,7 +27,9 @@ const getInitialProjects = () => {
     const cached = sessionStorage.getItem('trustmesh_cached_projects');
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return filterDeletedProjects(parsed);
+      }
     }
   } catch {}
   return [];
@@ -117,7 +119,7 @@ export default function ProjectsView() {
       const data = await api.getProjects({ signal: controller.signal });
       if (seq !== reqSeq.current) return;
 
-      const incomingList = Array.isArray(data) ? data : [];
+      const incomingList = filterDeletedProjects(Array.isArray(data) ? data : []);
 
       // Consistency guard against desynchronized serverless instance returning empty array
       if (incomingList.length === 0 && projectsRef.current.length > 0 && !userDeletedRef.current) {
@@ -200,7 +202,7 @@ export default function ProjectsView() {
 
     try {
       setRegisterLoading(true);
-      await api.createProject({
+      const created = await api.createProject({
         name: registerForm.name.trim(),
         slug: slug,
         description: registerForm.description.trim(),
@@ -213,6 +215,9 @@ export default function ProjectsView() {
           peer_weights: {}
         }
       });
+      if (created) {
+        unmarkProjectDeleted(created.id, created.slug || slug);
+      }
       setSuccessMsg(`Project "${registerForm.name}" registered in TrustMesh.`);
       setShowRegisterModal(false);
       setRegisterForm({
@@ -243,6 +248,9 @@ export default function ProjectsView() {
     try {
       setImportLoading(true);
       const imported = await api.importGitHubRepo(importUrl.trim(), importCategory);
+      if (imported) {
+        unmarkProjectDeleted(imported.id, imported.slug);
+      }
       setSuccessMsg(`Imported GitHub repository "${imported.name}" and synchronized pull requests.`);
       setShowImportModal(false);
       setImportUrl('');
@@ -346,10 +354,11 @@ export default function ProjectsView() {
     try {
       setDeleteLoading(true);
       setDeleteError('');
-      const res = await api.deleteProject(deletingProject.id);
+      const res = await api.deleteProject(deletingProject.id, deletingProject.slug);
 
       userDeletedRef.current = true;
-      const remaining = projects.filter((p) => p.id !== deletingProject.id);
+      markProjectDeleted(deletingProject.id, deletingProject.slug);
+      const remaining = projects.filter((p) => p.id !== deletingProject.id && p.slug !== deletingProject.slug);
       setProjects(remaining);
       projectsRef.current = remaining;
       try {

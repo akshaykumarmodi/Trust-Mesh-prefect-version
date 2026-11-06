@@ -267,7 +267,7 @@ export default function VouchesView() {
                 </label>
                 <input
                   type="url"
-                  placeholder="https://github.com/hyperflow-org/hyperflow/pull/412"
+                  placeholder="https://github.com/microsoft/vscode/pull/344157"
                   value={formData.evidence_url}
                   onChange={(e) => setFormData({ ...formData, evidence_url: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-cyan-500 font-mono"

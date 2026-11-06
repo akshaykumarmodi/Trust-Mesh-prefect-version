@@ -111,17 +111,73 @@ async function request(endpoint, options = {}, retries = 2) {
   return promise;
 }
 
+// Persistent tombstone ledger for deleted projects across serverless instances and refresh cycles
+export const KNOWN_PURGED_IDS = new Set([
+  'proj-hyperflow', 'hyperflow-engine',
+  'proj-cryptomesh', 'cryptomesh-core',
+  'proj-devpulse', 'devpulse-cli',
+  'proj-cloudnative', 'cloudnative-router',
+  'proj-tensorserve', 'tensorserve-ml',
+  'repo-security-mesh', 'security-mesh-gateway'
+]);
+
+export const getDeletedProjectIds = () => {
+  try {
+    const stored = localStorage.getItem('trustmesh_deleted_project_ids');
+    const parsed = stored ? JSON.parse(stored) : [];
+    return new Set([...KNOWN_PURGED_IDS, ...(Array.isArray(parsed) ? parsed : [])]);
+  } catch {
+    return new Set(KNOWN_PURGED_IDS);
+  }
+};
+
+export const markProjectDeleted = (id, slug) => {
+  try {
+    const set = getDeletedProjectIds();
+    if (id) set.add(id);
+    if (slug) set.add(slug);
+    localStorage.setItem('trustmesh_deleted_project_ids', JSON.stringify([...set]));
+  } catch {}
+};
+
+export const unmarkProjectDeleted = (id, slug) => {
+  try {
+    const set = getDeletedProjectIds();
+    if (id) set.delete(id);
+    if (slug) set.delete(slug);
+    localStorage.setItem('trustmesh_deleted_project_ids', JSON.stringify([...set]));
+  } catch {}
+};
+
+export const filterDeletedProjects = (list) => {
+  if (!Array.isArray(list)) return [];
+  const deletedSet = getDeletedProjectIds();
+  return list.filter((p) => p && !deletedSet.has(p.id) && !deletedSet.has(p.slug));
+};
+
 export const api = {
   // System & Overview
   getHealth: () => request('/health'),
   getOverview: () => request('/trust/overview'),
 
   // Projects
-  getProjects: (options = {}) => request('/projects', options),
+  getProjects: async (options = {}) => {
+    const list = await request('/projects', options);
+    return filterDeletedProjects(list);
+  },
   getProject: (id, options = {}) => request(`/projects/${id}`, options),
-  createProject: (data) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  createProject: async (data) => {
+    const created = await request('/projects', { method: 'POST', body: JSON.stringify(data) });
+    if (created) unmarkProjectDeleted(created.id, created.slug);
+    return created;
+  },
   updateProject: (id, data) => request(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
+  deleteProject: async (id, slug = null) => {
+    const res = await request(`/projects/${id}`, { method: 'DELETE' });
+    const targetId = res?.deleted_id || id;
+    markProjectDeleted(targetId, slug);
+    return res;
+  },
   setProjectPeerWeight: (projectId, data) => request(`/projects/${projectId}/peers`, { method: 'POST', body: JSON.stringify(data) }),
   getProjectRelationships: (projectId) => request(`/projects/${projectId}/relationships`),
 
@@ -195,15 +251,20 @@ export const api = {
   // GitHub Integration
   getGitHubStatus: () => request('/github/status'),
   getGitHubAuthUrl: () => request('/github/oauth/authorize'),
-  importGitHubRepo: (repoUrl, category = 'Infrastructure', customPolicy = null) =>
-    request('/github/import-repo', {
+  importGitHubRepo: async (repoUrl, category = 'Infrastructure', customPolicy = null) => {
+    const imported = await request('/github/import-repo', {
       method: 'POST',
       body: JSON.stringify({
         repo_url: repoUrl,
         category,
         custom_policy: customPolicy
       })
-    }),
+    });
+    if (imported) {
+      unmarkProjectDeleted(imported.id, imported.slug);
+    }
+    return imported;
+  },
   getProjectGitHubPulls: (projectId, params = {}) => {
     const query = new URLSearchParams();
     if (params.state) query.append('state', params.state);

@@ -176,3 +176,8 @@ def test_delete_project_also_deletes_associated_pull_requests(client, db_session
     # Also verify by ID prefix
     remaining_by_id = db_session.query(GitHubPullRequest).filter(GitHubPullRequest.id.startswith(f"ghpr-{proj_id}-")).all()
     assert len(remaining_by_id) == 0
+
+    # 5. Verify that GET /projects/{id}/pulls for deleted project returns 404 and does NOT re-register the project
+    get_pulls_res = client.get(f"/api/github/projects/{proj_id}/pulls")
+    assert get_pulls_res.status_code == 404
+    assert db_session.query(Project).filter(Project.id == proj_id).first() is None
