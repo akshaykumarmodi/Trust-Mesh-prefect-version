@@ -79,14 +79,16 @@ const SAMPLE_PEER_BUNDLE = {
 export default function SettingsView({ aiStatus, theme }) {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [projectsLoading, setProjectsLoading] = useState(true);
   const [exportBundle, setExportBundle] = useState(null);
   const [exportedJson, setExportedJson] = useState('');
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState('');
 
   const [importJson, setImportJson] = useState('');
   const [importLoading, setImportLoading] = useState(false);
-  const [importResult, setImportResult] = useState(null); // { success: boolean, message: string, details?: any }
+  const [importResult, setImportResult] = useState(null); // { success: boolean, message: string, projectName?: string, vouchesCount?: number }
 
   const [copied, setCopied] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
@@ -95,17 +97,22 @@ export default function SettingsView({ aiStatus, theme }) {
   const nodePublicKey = "tm_pk_trustmesh_federation_2026_main";
 
   const fetchProjects = async () => {
+    setProjectsLoading(true);
     try {
       const data = await api.getProjects();
-      setProjects(data || []);
-      if (data && data.length > 0) {
-        const initialId = data[0].id;
+      const valid = Array.isArray(data) ? data : [];
+      setProjects(valid);
+      if (valid.length > 0) {
+        const initialId = valid[0].id;
         setSelectedProjectId(initialId);
         // Automatically generate initial bundle for convenience
-        generateBundle(initialId);
+        generateBundle(initialId, valid);
       }
     } catch (e) {
       console.error('Error fetching projects for federation:', e);
+      setExportError('Unable to load projects. Please verify backend connection.');
+    } finally {
+      setProjectsLoading(false);
     }
   };
 
@@ -113,15 +120,26 @@ export default function SettingsView({ aiStatus, theme }) {
     fetchProjects();
   }, []);
 
-  const generateBundle = async (projId) => {
-    const targetId = projId || selectedProjectId;
-    if (!targetId) return;
+  const generateBundle = async (projId, projectList) => {
+    const list = projectList || projects;
+    const targetId = projId || selectedProjectId || (list.length > 0 ? list[0].id : null);
+    if (!targetId) {
+      setExportError('Please select a repository to generate its trust bundle.');
+      return;
+    }
+
+    setSelectedProjectId(targetId);
     setExportLoading(true);
     setExportError(null);
+    setExportSuccessMessage('');
+
     try {
       const bundle = await api.exportFederationBundle(targetId);
       setExportBundle(bundle);
       setExportedJson(JSON.stringify(bundle, null, 2));
+      const targetProj = list.find((p) => p.id === targetId);
+      const projName = targetProj ? targetProj.name : targetId;
+      setExportSuccessMessage(`Cryptographic trust bundle successfully generated & signed for ${projName}!`);
     } catch (err) {
       console.error('Failed to export federation bundle:', err);
       setExportError(err.message || 'Failed to generate federation bundle.');
@@ -177,7 +195,6 @@ export default function SettingsView({ aiStatus, theme }) {
       try {
         const text = event.target?.result;
         if (text) {
-          // Pre-validate JSON formatting
           JSON.parse(text);
           setImportJson(text);
           setImportResult(null);
@@ -190,7 +207,6 @@ export default function SettingsView({ aiStatus, theme }) {
       }
     };
     reader.readAsText(file);
-    // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -232,7 +248,6 @@ export default function SettingsView({ aiStatus, theme }) {
         projectName: res.imported_from_project || parsed.source_project.name,
         vouchesCount: res.vouches_imported ?? (parsed.vouches?.length || 0),
       });
-      // Refresh project list so newly imported project shows up immediately
       fetchProjects();
     } catch (err) {
       console.error('Import failed:', err);
@@ -282,14 +297,14 @@ export default function SettingsView({ aiStatus, theme }) {
               </span>
               <button
                 onClick={handleCopyPublicKey}
-                className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
                 title="Copy public key"
               >
                 {copiedKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                 <span>{copiedKey ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
-            <div className="text-xs font-mono text-cyan-300 truncate bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+            <div className="fed-key-box text-xs font-mono text-cyan-300 truncate p-2 rounded-lg border border-slate-800">
               {nodePublicKey}
             </div>
             <div className="fed-border-t flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
@@ -304,68 +319,102 @@ export default function SettingsView({ aiStatus, theme }) {
       </div>
 
       {/* SECTION 1: FEDERATION EXPORT */}
-      <div className="fed-card bg-[#090e1a]/85 border border-slate-800/80 rounded-2xl p-6 space-y-5 shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+      <div className="fed-card bg-[#090e1a]/85 border border-slate-800/80 rounded-2xl p-6 sm:p-7 space-y-6 shadow-lg">
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 shrink-0 mt-0.5">
               <Download className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="fed-title text-base font-bold text-white">Export Repository Trust Bundle</h2>
-              <p className="fed-muted text-xs text-slate-400 mt-0.5">
+              <h2 className="fed-title text-lg font-bold text-white tracking-tight">Export Repository Trust Bundle</h2>
+              <p className="fed-muted text-xs sm:text-sm text-slate-400 mt-1">
                 Generate an attributable, signed JSON bundle containing your repository's vouches, denouncements, and peering edges.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="fed-muted text-xs font-mono text-slate-400 hidden sm:inline">Select Repository:</span>
-            <select
-              value={selectedProjectId}
-              onChange={handleProjectSelect}
-              className="fed-select bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id} className="bg-slate-900 text-slate-100">
-                  {p.name} ({p.slug})
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 self-start md:self-center">
+            <span className="px-3 py-1 rounded-full text-[11px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5" />
+              Verifiable Envelope: SHA256-ED25519-SIM
+            </span>
+          </div>
+        </div>
 
+        {/* Repository Selector and Primary Generate Button Bar */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end bg-slate-950/40 p-4 sm:p-5 rounded-xl border border-slate-800/60">
+          <div className="lg:col-span-7 space-y-2">
+            <label className="fed-title text-xs font-semibold text-slate-200 block uppercase tracking-wider font-mono">
+              Target Repository for Cryptographic Bundle
+            </label>
+            {projectsLoading ? (
+              <div className="flex items-center gap-2 text-xs text-slate-400 font-mono py-2">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                <span>Loading active repositories...</span>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="flex items-center justify-between text-xs text-amber-400 font-mono py-1">
+                <span>No repositories detected.</span>
+                <button
+                  onClick={fetchProjects}
+                  className="text-cyan-400 underline hover:text-cyan-300"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            ) : (
+              <select
+                value={selectedProjectId}
+                onChange={handleProjectSelect}
+                className="fed-select w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.slug}) &bull; {p.category || 'Infrastructure'}
+                  </option>
+                ))}
+              </select>
+            )}
+            {selectedProj && (
+              <div className="text-[11px] font-mono text-slate-400 flex items-center gap-3 pt-0.5">
+                <span>ID: <span className="text-cyan-400">{selectedProj.id}</span></span>
+                {selectedProj.repo_url && (
+                  <a
+                    href={selectedProj.repo_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline flex items-center gap-1 text-slate-400 hover:text-cyan-300"
+                  >
+                    <span>GitHub</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+                <span>Category: <span className="text-slate-300">{selectedProj.category || 'General'}</span></span>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-5 flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => generateBundle()}
-              disabled={exportLoading || !selectedProjectId}
-              className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              disabled={exportLoading || projectsLoading || projects.length === 0}
+              className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)] transition-all disabled:opacity-50 cursor-pointer"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${exportLoading ? 'animate-spin' : ''}`} />
-              <span>{exportLoading ? 'Generating...' : 'Refresh Bundle'}</span>
+              <RefreshCw className={`w-4 h-4 ${exportLoading ? 'animate-spin' : ''}`} />
+              <span>{exportLoading ? 'Generating Attributable Bundle...' : 'Generate Attributable, Signed JSON Bundle'}</span>
             </button>
           </div>
         </div>
 
-        {/* Export Metadata Summary Pills */}
-        {exportBundle && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
-            <div className="fed-subcard p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Protocol Version</span>
-              <span className="fed-title text-sm font-bold text-white mt-1 block">{exportBundle.version || '1.0.0'}</span>
-            </div>
-            <div className="fed-subcard p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Signed Vouches</span>
-              <span className="text-sm font-bold text-emerald-400 mt-1 block">{exportBundle.vouches?.length ?? 0}</span>
-            </div>
-            <div className="fed-subcard p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Denouncements</span>
-              <span className="text-sm font-bold text-rose-400 mt-1 block">{exportBundle.denouncements?.length ?? 0}</span>
-            </div>
-            <div className="fed-subcard p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Peer Edges</span>
-              <span className="text-sm font-bold text-cyan-400 mt-1 block">{exportBundle.peer_edges?.length ?? 0}</span>
-            </div>
+        {/* Live Feedback Messages */}
+        {exportSuccessMessage && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{exportSuccessMessage}</span>
           </div>
         )}
 
-        {/* Error alert if export failed */}
         {exportError && (
           <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300">
             <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
@@ -373,8 +422,34 @@ export default function SettingsView({ aiStatus, theme }) {
           </div>
         )}
 
+        {/* Export Metadata Summary Pills */}
+        {exportBundle && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+            <div className="fed-subcard p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Protocol Version</span>
+              <span className="fed-title text-sm font-bold text-white mt-1 block">{exportBundle.version || '1.0.0'}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">TrustMesh Canonical</span>
+            </div>
+            <div className="fed-subcard p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Signed Vouches</span>
+              <span className="text-sm font-bold text-emerald-400 mt-1 block">{exportBundle.vouches?.length ?? 0}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Attributable signals</span>
+            </div>
+            <div className="fed-subcard p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Denouncements</span>
+              <span className="text-sm font-bold text-rose-400 mt-1 block">{exportBundle.denouncements?.length ?? 0}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Adversarial flags</span>
+            </div>
+            <div className="fed-subcard p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
+              <span className="fed-muted text-[10px] uppercase text-slate-500 block">Peer Edges</span>
+              <span className="text-sm font-bold text-cyan-400 mt-1 block">{exportBundle.peer_edges?.length ?? 0}</span>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Federated nodes</span>
+            </div>
+          </div>
+        )}
+
         {/* Exported JSON payload viewer */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="fed-muted text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <FileJson className="w-3.5 h-3.5 text-cyan-400" />
@@ -384,7 +459,7 @@ export default function SettingsView({ aiStatus, theme }) {
               <button
                 onClick={handleCopyExport}
                 disabled={!exportedJson}
-                className="fed-button-alt px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white hover:border-slate-700 flex items-center gap-1.5 transition-colors disabled:opacity-40"
+                className="fed-button-alt px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white hover:border-slate-700 flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-cyan-400" />}
                 <span>{copied ? 'Copied' : 'Copy Payload'}</span>
@@ -393,7 +468,7 @@ export default function SettingsView({ aiStatus, theme }) {
               <button
                 onClick={handleDownloadExport}
                 disabled={!exportedJson}
-                className="fed-button-alt px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white hover:border-slate-700 flex items-center gap-1.5 transition-colors disabled:opacity-40"
+                className="fed-button-alt px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-white hover:border-slate-700 flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Download .json</span>
@@ -401,28 +476,28 @@ export default function SettingsView({ aiStatus, theme }) {
             </div>
           </div>
 
-          <pre className="fed-pre p-4 rounded-xl bg-[#03060c] border border-slate-800/80 font-mono text-[11px] text-cyan-300 max-h-64 overflow-y-auto leading-relaxed">
+          <pre className="fed-pre p-4 rounded-xl bg-[#03060c] border border-slate-800/80 font-mono text-[11px] text-cyan-300 max-h-72 overflow-y-auto leading-relaxed select-all">
             {exportLoading ? (
-              <span className="text-slate-500">Generating cryptographic federation bundle...</span>
+              <span className="text-slate-500">Generating attributable, signed cryptographic bundle...</span>
             ) : exportedJson ? (
               exportedJson
             ) : (
-              <span className="text-slate-500">Select a project above to inspect signed bundle.</span>
+              <span className="text-slate-500">Select a project above and click "Generate Attributable, Signed JSON Bundle".</span>
             )}
           </pre>
         </div>
       </div>
 
       {/* SECTION 2: FEDERATION IMPORT */}
-      <div className="fed-card bg-[#090e1a]/85 border border-slate-800/80 rounded-2xl p-6 space-y-5 shadow-lg">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+      <div className="fed-card bg-[#090e1a]/85 border border-slate-800/80 rounded-2xl p-6 sm:p-7 space-y-6 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 shrink-0 mt-0.5">
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="fed-title text-base font-bold text-white">Import External Peer Bundle</h2>
-              <p className="fed-muted text-xs text-slate-400 mt-0.5">
+              <h2 className="fed-title text-lg font-bold text-white tracking-tight">Import External Peer Bundle</h2>
+              <p className="fed-muted text-xs sm:text-sm text-slate-400 mt-1">
                 Merge verifiable cryptographic trust signals and vouches from an external peer node directly into your local TrustMesh.
               </p>
             </div>
@@ -432,7 +507,7 @@ export default function SettingsView({ aiStatus, theme }) {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleLoadSample}
-              className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5" />
               <span>Load Sample Peer Bundle</span>
@@ -440,7 +515,7 @@ export default function SettingsView({ aiStatus, theme }) {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="fed-button-alt px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium flex items-center gap-1.5 transition-colors"
+              className="fed-button-alt px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5 text-cyan-400" />
               <span>Upload File</span>
@@ -465,7 +540,7 @@ export default function SettingsView({ aiStatus, theme }) {
             {importJson && (
               <button
                 onClick={handleClearImport}
-                className="fed-muted text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1"
+                className="fed-muted text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Clear</span>
@@ -487,7 +562,7 @@ export default function SettingsView({ aiStatus, theme }) {
           <button
             onClick={handleImport}
             disabled={importLoading || !importJson.trim()}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.25)] transition-all disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(99,102,241,0.25)] transition-all disabled:opacity-50 cursor-pointer"
           >
             {importLoading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -525,7 +600,7 @@ export default function SettingsView({ aiStatus, theme }) {
       </div>
 
       {/* SECTION 3: AI RUNTIME & ARCHITECTURE */}
-      <div className="fed-card bg-[#090e1a]/85 border border-slate-800/80 rounded-2xl p-6 space-y-4 shadow-lg">
+      <div className="fed-card bg-[#090e1a]/85 border border-slate-800/80 rounded-2xl p-6 sm:p-7 space-y-4 shadow-lg">
         <div className="flex items-center gap-2.5 text-cyan-400 font-bold text-sm">
           <Cpu className="w-5 h-5" />
           <span>AI Architecture & Model Runtime Intelligence</span>
@@ -559,7 +634,7 @@ export default function SettingsView({ aiStatus, theme }) {
       </div>
 
       {/* SECTION 4: PRODUCTION PERSISTENCE & CENTRALIZED MESH GOVERNANCE */}
-      <div className="fed-subcard p-6 rounded-2xl border border-emerald-950/50 bg-emerald-950/15 space-y-3">
+      <div className="fed-persistence-card p-6 rounded-2xl border border-emerald-950/50 bg-emerald-950/15 space-y-3">
         <div className="text-emerald-400 font-bold text-sm flex items-center gap-2">
           <Shield className="w-4 h-4" />
           <span>Production Persistence & Centralized Governance</span>
