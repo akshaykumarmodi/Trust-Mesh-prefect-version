@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.database.session import Base
-from app.models import Project
+from app.models import Project, GitHubPullRequest
 from app.services.seed_data import _bootstrap_from_authoritative_seed
 
 def test_projects_bootstrap_on_empty_serverless_container():
@@ -113,3 +113,66 @@ def test_delete_nonexistent_project_returns_404(client):
     del_res = client.delete("/api/projects/proj-non-existent-999")
     assert del_res.status_code == 404
     assert "not found" in del_res.json()["detail"].lower()
+
+def test_delete_project_also_deletes_associated_pull_requests(client, db_session):
+    """Verifies that deleting a project also permanently deletes all pull requests linked to it."""
+    # 1. Create a project
+    create_res = client.post("/api/projects", json={
+        "name": "Project With PRs",
+        "slug": "project-with-prs",
+        "description": "Repo with associated PRs",
+        "category": "Infrastructure",
+        "stars": 10
+    })
+    assert create_res.status_code == 201
+    proj_id = create_res.json()["id"]
+
+    # 2. Add 3 pull requests linked to this project
+    pr1 = GitHubPullRequest(
+        id=f"ghpr-{proj_id}-101",
+        project_id=proj_id,
+        pr_number=101,
+        title="Feat: Add async engine",
+        author_username="contributor-alice",
+        html_url=f"https://github.com/test/{proj_id}/pull/101",
+        state="open"
+    )
+    pr2 = GitHubPullRequest(
+        id=f"ghpr-{proj_id}-102",
+        project_id=proj_id,
+        pr_number=102,
+        title="Fix: Memory leak in worker",
+        author_username="contributor-bob",
+        html_url=f"https://github.com/test/{proj_id}/pull/102",
+        state="merged",
+        is_merged=True
+    )
+    pr3 = GitHubPullRequest(
+        id=f"ghpr-{proj_id}-103",
+        project_id=proj_id,
+        pr_number=103,
+        title="Docs: Update trust policy guides",
+        author_username="contributor-charlie",
+        html_url=f"https://github.com/test/{proj_id}/pull/103",
+        state="closed"
+    )
+    db_session.add_all([pr1, pr2, pr3])
+    db_session.commit()
+
+    # Verify PRs exist in database
+    existing_prs = db_session.query(GitHubPullRequest).filter(GitHubPullRequest.project_id == proj_id).all()
+    assert len(existing_prs) == 3
+
+    # 3. Delete the project via API
+    del_res = client.delete(f"/api/projects/{proj_id}")
+    assert del_res.status_code == 200
+    assert del_res.json()["status"] == "success"
+    assert del_res.json()["deleted_prs_count"] == 3
+
+    # 4. Verify all associated PRs are completely deleted from the database
+    remaining_prs = db_session.query(GitHubPullRequest).filter(GitHubPullRequest.project_id == proj_id).all()
+    assert len(remaining_prs) == 0, f"Expected 0 remaining PRs, found {len(remaining_prs)}"
+
+    # Also verify by ID prefix
+    remaining_by_id = db_session.query(GitHubPullRequest).filter(GitHubPullRequest.id.startswith(f"ghpr-{proj_id}-")).all()
+    assert len(remaining_by_id) == 0

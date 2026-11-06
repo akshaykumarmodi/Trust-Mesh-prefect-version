@@ -166,7 +166,12 @@ def delete_project(
     db.query(Denouncement).filter(Denouncement.reporting_project_id == deleted_id).delete(synchronize_session=False)
 
     # 3. Delete associated pull requests
-    db.query(GitHubPullRequest).filter(GitHubPullRequest.project_id == deleted_id).delete(synchronize_session=False)
+    deleted_prs_count = db.query(GitHubPullRequest).filter(
+        (GitHubPullRequest.project_id == deleted_id) |
+        (GitHubPullRequest.project_id == deleted_slug) |
+        (GitHubPullRequest.id.startswith(f"ghpr-{deleted_id}-")) |
+        (GitHubPullRequest.id.startswith(f"ghpr-{deleted_slug}-"))
+    ).delete(synchronize_session=False)
 
     # 4. Delete the project record
     db.delete(proj)
@@ -183,27 +188,42 @@ def delete_project(
                     p for p in sdata["Project"]
                     if p.get("id") != deleted_id and p.get("slug") != deleted_slug
                 ]
-                with open(seed_path, "w", encoding="utf-8") as f:
-                    json.dump(sdata, f, indent=2)
+            if "GitHubPullRequest" in sdata:
+                sdata["GitHubPullRequest"] = [
+                    pr for pr in sdata["GitHubPullRequest"]
+                    if pr.get("project_id") != deleted_id
+                    and pr.get("project_id") != deleted_slug
+                    and not str(pr.get("id", "")).startswith(f"ghpr-{deleted_id}-")
+                    and not str(pr.get("id", "")).startswith(f"ghpr-{deleted_slug}-")
+                ]
+            if "ProjectTrustEdge" in sdata:
+                sdata["ProjectTrustEdge"] = [
+                    e for e in sdata["ProjectTrustEdge"]
+                    if e.get("source_project_id") != deleted_id
+                    and e.get("target_project_id") != deleted_id
+                ]
+            with open(seed_path, "w", encoding="utf-8") as f:
+                json.dump(sdata, f)
     except Exception as exc:
         print(f"[Delete Project Warning] Could not update authoritative_seed.json: {exc}")
 
     ActivityLogger.log(
         db=db,
         event_type="PROJECT_DELETED",
-        event_description=f"Project '{deleted_name}' ({deleted_slug}) was deleted from TrustMesh",
+        event_description=f"Project '{deleted_name}' ({deleted_slug}) and {deleted_prs_count} associated pull requests were deleted from TrustMesh",
         user=user,
         resource_type="project",
         resource_id=deleted_id,
         project_name=deleted_name,
         status="SUCCESS",
-        metadata={"deleted_id": deleted_id, "slug": deleted_slug}
+        metadata={"deleted_id": deleted_id, "slug": deleted_slug, "deleted_prs_count": deleted_prs_count}
     )
 
     return {
         "status": "success",
-        "message": f"Project '{deleted_name}' was successfully deleted.",
-        "deleted_id": deleted_id
+        "message": f"Project '{deleted_name}' and all {deleted_prs_count} associated pull requests were successfully deleted.",
+        "deleted_id": deleted_id,
+        "deleted_prs_count": deleted_prs_count
     }
 
 
