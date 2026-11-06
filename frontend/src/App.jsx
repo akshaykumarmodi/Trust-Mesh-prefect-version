@@ -234,7 +234,7 @@ export default function App() {
             theme={theme}
           />
         )}
-        {currentView === 'settings' && <SettingsView aiStatus={aiStatus} />}
+        {currentView === 'settings' && <SettingsView aiStatus={aiStatus} theme={theme} />}
       </DashboardLayout>
 
       <AuthModal
