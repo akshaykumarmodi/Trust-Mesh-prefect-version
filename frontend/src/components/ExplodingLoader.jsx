@@ -1,25 +1,25 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Shield, Volume2 } from 'lucide-react';
+import { Shield, Sparkles } from 'lucide-react';
 
 const LETTERS = ['T', 'R', 'U', 'S', 'T', 'M', 'E', 'S', 'H'];
 
 /**
- * Web Audio API Engine: Synthesizes an energetic, deep cinematic movie studio
- * opening sound (like the iconic Netflix "Ta-dum" / HBO / cinema intro chord with
- * chest-thumping sub-bass impact, warm analog harmonic saturation, resonant choir formant swell,
- * and high-frequency specular glint sheen).
- * 100% self-contained, zero external downloads, zero latency, 100% reliable.
+ * Web Audio API Synthesis Engine:
+ * Generates an energetic cinematic movie opening chord (Netflix "Ta-dum" / HBO style)
+ * with deep sub-bass impacts, analog soft-clipping saturation, choir formant swell,
+ * and high-frequency specular glint sheen.
+ * Acts as an instant zero-latency fallback if the WAV file has network or decode issues.
  */
 function createCinematicMovieSound(ctx) {
   try {
-    const now = ctx.currentTime + 0.05; // tiny pre-delay for hardware clock stabilization
+    const now = ctx.currentTime + 0.05;
 
     // Master Gain Node
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(1.0, now);
+    masterGain.gain.setValueAtTime(0.9, now);
     masterGain.connect(ctx.destination);
 
-    // Soft-Clipping Distortion for Rich Analog Movie Theater Warmth
+    // Soft-Clipping Distortion for Warm Analog Theater Harmonics
     const waveShaper = ctx.createWaveShaper();
     const n_samples = 4096;
     const curve = new Float32Array(n_samples);
@@ -36,7 +36,7 @@ function createCinematicMovieSound(ctx) {
     osc1.type = 'sine';
     osc1.frequency.setValueAtTime(110, now);
     osc1.frequency.exponentialRampToValueAtTime(45, now + 0.16);
-    gain1.gain.setValueAtTime(0.6, now);
+    gain1.gain.setValueAtTime(0.55, now);
     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
     osc1.connect(gain1);
     gain1.connect(waveShaper);
@@ -56,7 +56,7 @@ function createCinematicMovieSound(ctx) {
     osc2.frequency.exponentialRampToValueAtTime(32, subTime + 1.5);
 
     gain2.gain.setValueAtTime(0.001, subTime);
-    gain2.gain.linearRampToValueAtTime(1.0, subTime + 0.02);
+    gain2.gain.linearRampToValueAtTime(0.95, subTime + 0.02);
     gain2.gain.exponentialRampToValueAtTime(0.001, subTime + 1.7);
 
     osc2.connect(filter2);
@@ -66,7 +66,6 @@ function createCinematicMovieSound(ctx) {
     osc2.stop(subTime + 1.75);
 
     // 3. Energetic Cinematic Choir / Vocal Formant Swell ("Ahhhh")
-    // D Major Triad: D3 (146.8Hz), A3 (220Hz), D4 (293.7Hz), F#4 (370Hz), A4 (440Hz), D5 (587Hz)
     const chord = [146.83, 220.0, 293.66, 369.99, 440.0, 587.33];
     chord.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
@@ -92,7 +91,7 @@ function createCinematicMovieSound(ctx) {
       osc.stop(subTime + 1.95);
     });
 
-    // 4. Specular Anamorphic Glint Sheen (High metallic shimmer as letters assemble)
+    // 4. Specular Anamorphic Glint Sheen
     const glintTime = now + 0.5;
     const oscGlint = ctx.createOscillator();
     const gainGlint = ctx.createGain();
@@ -119,165 +118,218 @@ function createCinematicMovieSound(ctx) {
   }
 }
 
-// Global AudioContext Singleton
-let globalAudioCtx = null;
-let lastSoundStartTime = 0;
-
-export function getAudioContext() {
-  if (typeof window === 'undefined') return null;
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return null;
-  if (!globalAudioCtx || globalAudioCtx.state === 'closed') {
-    globalAudioCtx = new AudioCtx();
-  }
-  return globalAudioCtx;
-}
-
-// Global HTML5 Audio fallback
-let globalCinemaAudio = null;
-export function getCinemaAudio() {
-  if (typeof window === 'undefined') return null;
-  if (!globalCinemaAudio) {
-    globalCinemaAudio = new Audio('/cinema-intro.wav');
-    globalCinemaAudio.preload = 'auto';
-    globalCinemaAudio.volume = 1.0;
-    globalCinemaAudio.setAttribute('playsinline', 'true');
-  }
-  return globalCinemaAudio;
-}
-
-export async function playGlobalCinemaAudio() {
-  const now = Date.now();
-  // Prevent duplicate overlapping triggers within 2 seconds
-  if (now - lastSoundStartTime < 2000) {
-    return true;
+/**
+ * Robust Singleton Audio Manager:
+ * Manages the physical cinematic audio asset (/cinema-intro.wav) and Web Audio API fallback.
+ * Strictly prevents duplicate overlapping playback and handles browser autoplay boundaries.
+ */
+class CinemaAudioManager {
+  constructor() {
+    this.audio = null;
+    this.audioCtx = null;
+    this.isPlaying = false;
   }
 
-  // 1. Primary Engine: Instant Web Audio API Synthesizer
-  try {
-    const ctx = getAudioContext();
-    if (ctx) {
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-      if (ctx.state === 'running') {
-        lastSoundStartTime = Date.now();
-        createCinematicMovieSound(ctx);
-        return true;
-      }
+  getAudio() {
+    if (typeof window === 'undefined') return null;
+    if (!this.audio) {
+      this.audio = new Audio('/cinema-intro.wav');
+      this.audio.preload = 'auto';
+      this.audio.volume = 0.9;
+      this.audio.setAttribute('playsinline', 'true');
     }
-  } catch (err) {
-    console.warn('[WebAudio] synthesis deferred:', err);
+    return this.audio;
   }
 
-  // 2. Dual Fallback: Native HTML5 Audio
-  try {
-    const audio = getCinemaAudio();
-    if (audio) {
-      audio.volume = 1.0;
-      try {
-        if (audio.readyState >= 1) {
-          audio.currentTime = 0;
+  getAudioContext() {
+    if (typeof window === 'undefined') return null;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!this.audioCtx || this.audioCtx.state === 'closed') {
+      this.audioCtx = new AudioCtx();
+    }
+    return this.audioCtx;
+  }
+
+  async play() {
+    // Prevent duplicate overlapping triggers
+    if (this.isPlaying) return true;
+
+    // 1. Primary: Use physical stereo sound asset (/cinema-intro.wav)
+    try {
+      const audio = this.getAudio();
+      if (audio) {
+        audio.volume = 0.9;
+        try {
+          if (audio.readyState >= 1) {
+            audio.currentTime = 0;
+          }
+        } catch {}
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          this.isPlaying = true;
+          audio.onended = () => {
+            this.isPlaying = false;
+          };
+          return true;
         }
-      } catch {}
-      await audio.play();
-      lastSoundStartTime = Date.now();
-      return true;
+      }
+    } catch (err) {
+      // Browser blocked unmuted autoplay without user gesture
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
+        return false;
+      }
+      // If error was not autoplay rejection (e.g. loading error), try Web Audio fallback
     }
-  } catch (err) {
-    console.warn('[HTML5 Audio] play deferred:', err);
+
+    // 2. Dual Fallback: Web Audio API synthesis
+    try {
+      const ctx = this.getAudioContext();
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+        if (ctx.state === 'running') {
+          this.isPlaying = true;
+          createCinematicMovieSound(ctx);
+          setTimeout(() => {
+            this.isPlaying = false;
+          }, 2400);
+          return true;
+        }
+      }
+    } catch (err) {
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
+        return false;
+      }
+    }
+
+    return false;
   }
 
-  return false;
+  stop() {
+    try {
+      if (this.audio) {
+        this.audio.pause();
+        this.audio.currentTime = 0;
+      }
+    } catch {}
+    this.isPlaying = false;
+  }
+}
+
+export const cinemaAudioManager = new CinemaAudioManager();
+
+export function playGlobalCinemaAudio() {
+  return cinemaAudioManager.play();
 }
 
 export default function ExplodingLoader({ onComplete }) {
+  // 'initializing' | 'playing' | 'awaiting_interaction' | 'completed'
+  const [status, setStatus] = useState('initializing');
   const [progress, setProgress] = useState(0);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [audioPlayed, setAudioPlayed] = useState(false);
-  const hasTriggeredRef = useRef(false);
 
-  // Attempt automatic audio playback
-  const attemptPlay = useCallback(async () => {
-    if (hasTriggeredRef.current) return;
-    try {
-      const success = await playGlobalCinemaAudio();
-      if (success) {
-        hasTriggeredRef.current = true;
-        setAudioPlayed(true);
-      }
-    } catch {
-      // Ignored
-    }
-  }, []);
+  const statusRef = useRef('initializing');
+  const progressIntervalRef = useRef(null);
 
-  // Multi-tiered automatic start:
-  // 1. Immediate trigger on component mount (0ms, 40ms, 150ms)
-  // 2. Passive window listeners: any touch, click, scroll or keypress starts sound instantly
-  useEffect(() => {
-    attemptPlay();
+  // Synchronized Cinematic Launch:
+  // Starts the dramatic audio and letter convergence animation at the exact same moment
+  const startExperience = useCallback(async () => {
+    if (statusRef.current === 'playing' || statusRef.current === 'completed') return;
 
-    const t1 = setTimeout(attemptPlay, 40);
-    const t2 = setTimeout(attemptPlay, 150);
-    const t3 = setTimeout(attemptPlay, 350);
+    statusRef.current = 'playing';
+    setStatus('playing');
 
-    const unlockEvents = [
-      'pointerdown',
-      'mousedown',
-      'touchstart',
-      'keydown',
-      'click',
-      'wheel'
-    ];
+    // Trigger audio immediately
+    await cinemaAudioManager.play();
 
-    const handleUnlock = () => {
-      attemptPlay();
-    };
-
-    unlockEvents.forEach((evt) => {
-      window.addEventListener(evt, handleUnlock, { capture: true });
-    });
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      unlockEvents.forEach((evt) => {
-        window.removeEventListener(evt, handleUnlock, { capture: true });
-      });
-    };
-  }, [attemptPlay]);
-
-  // Loading timeline progression (~2.1s total)
-  useEffect(() => {
+    // Progression timer synchronized with the 2.4s audio asset duration
     const startTime = Date.now();
-    const duration = 2100;
+    const duration = 2400;
 
-    const interval = setInterval(() => {
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+
+    progressIntervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min(Math.round((elapsed / duration) * 100), 100);
       setProgress(pct);
 
       if (elapsed >= duration) {
-        clearInterval(interval);
+        clearInterval(progressIntervalRef.current);
+        statusRef.current = 'completed';
         setIsFadingOut(true);
         setTimeout(() => {
           if (onComplete) onComplete();
-        }, 300);
+        }, 350);
       }
     }, 16);
-
-    return () => clearInterval(interval);
   }, [onComplete]);
 
+  // Initial Autoplay Attempt on Mount:
+  // 1. Tries to autoplay immediately when intro starts.
+  // 2. If browser policy permits -> launches seamlessly with sound and animation.
+  // 3. If browser policy blocks cold autoplay -> displays minimal "ENTER EXPERIENCE" prompt.
+  useEffect(() => {
+    let isCancelled = false;
+
+    const attemptAutoplay = async () => {
+      // If already triggered or active in current session
+      if (cinemaAudioManager.isPlaying) {
+        startExperience();
+        return;
+      }
+
+      const allowed = await cinemaAudioManager.play();
+      if (isCancelled) return;
+
+      if (allowed) {
+        startExperience();
+      } else {
+        statusRef.current = 'awaiting_interaction';
+        setStatus('awaiting_interaction');
+      }
+    };
+
+    attemptAutoplay();
+
+    return () => {
+      isCancelled = true;
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [startExperience]);
+
+  // Global Interaction Listeners for seamless entry when awaiting interaction
+  useEffect(() => {
+    const handleGlobalInteraction = (e) => {
+      if (statusRef.current === 'awaiting_interaction') {
+        startExperience();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalInteraction);
+    window.addEventListener('pointerdown', handleGlobalInteraction);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalInteraction);
+      window.removeEventListener('pointerdown', handleGlobalInteraction);
+    };
+  }, [startExperience]);
+
   const handleSkip = useCallback(() => {
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    cinemaAudioManager.stop();
     setIsFadingOut(true);
     setTimeout(() => {
       if (onComplete) onComplete();
     }, 120);
   }, [onComplete]);
 
-  // Escape to skip
+  // Escape key to skip
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -290,17 +342,21 @@ export default function ExplodingLoader({ onComplete }) {
 
   return (
     <div
-      onClick={attemptPlay}
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#02050b] overflow-hidden select-none transition-all duration-600 ${
+      onClick={() => {
+        if (status === 'awaiting_interaction') {
+          startExperience();
+        }
+      }}
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#02050b] overflow-hidden select-none transition-all duration-500 ${
         isFadingOut ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Soft luxury ambient spotlight */}
+      {/* Luxury ambient spotlight */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,rgba(15,23,42,0.4)_45%,#02050b_75%)] pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/85 to-transparent pointer-events-none" />
       <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />
 
-      {/* Top Controls: Clean Skip Button */}
+      {/* Top Controls: Minimal Skip Button */}
       <div className="absolute top-6 right-6 z-20 pointer-events-auto">
         <button
           onClick={(e) => {
@@ -334,9 +390,11 @@ export default function ExplodingLoader({ onComplete }) {
               return (
                 <span
                   key={index}
-                  className="relative inline-block text-transparent bg-clip-text animate-letter-converge"
+                  className={`relative inline-block text-transparent bg-clip-text ${
+                    status === 'playing' ? 'animate-letter-converge' : 'opacity-90'
+                  }`}
                   style={{
-                    animationDelay: delay,
+                    animationDelay: status === 'playing' ? delay : '0ms',
                     backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #e2e8f0 40%, #94a3b8 75%, #38bdf8 100%)',
                     filter: 'drop-shadow(0 0 20px rgba(6, 182, 212, 0.45))',
                   }}
@@ -348,12 +406,18 @@ export default function ExplodingLoader({ onComplete }) {
           </h1>
 
           {/* Single Classy Specular Light Glint Sheen Sweeping Across Letters */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/80 to-transparent opacity-85 skew-x-[-20deg] animate-specular-sheen shadow-[0_0_30px_#ffffff]" />
-          </div>
+          {status === 'playing' && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="w-1/3 h-full bg-gradient-to-r from-transparent via-white/80 to-transparent opacity-85 skew-x-[-20deg] animate-specular-sheen shadow-[0_0_30px_#ffffff]" />
+            </div>
+          )}
 
           {/* Elegant Hairline Divider Line */}
-          <div className="mt-3 sm:mt-4 h-[1px] w-full bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent animate-hairline-expand" />
+          <div
+            className={`mt-3 sm:mt-4 h-[1px] w-full bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent ${
+              status === 'playing' ? 'animate-hairline-expand' : 'opacity-40'
+            }`}
+          />
         </div>
 
         {/* Minimalist Premium Subtitle */}
@@ -365,36 +429,44 @@ export default function ExplodingLoader({ onComplete }) {
           <span className="w-1 h-1 rounded-full bg-cyan-400" />
         </div>
 
-        {/* Subtle Classy Tap Prompt ONLY if browser blocked autoplay */}
-        {!audioPlayed && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              attemptPlay();
-            }}
-            className="mt-4 px-4 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-medium flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)] animate-pulse transition-all cursor-pointer"
-          >
-            <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Tap to enable cinema sound 🔊</span>
-          </button>
+        {/* BROWSER AUTOPLAY FALLBACK: Minimal "ENTER EXPERIENCE" Interaction */}
+        {status === 'awaiting_interaction' && (
+          <div className="mt-8 flex flex-col items-center gap-3 animate-fade-in pointer-events-auto">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                startExperience();
+              }}
+              className="group relative inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-cyan-500/20 hover:from-cyan-500/35 hover:to-blue-500/35 border border-cyan-400/50 text-cyan-200 text-xs sm:text-sm font-mono font-bold tracking-[0.28em] uppercase shadow-[0_0_35px_rgba(6,182,212,0.35)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+              <span>ENTER EXPERIENCE</span>
+              <span className="text-cyan-400 group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+            <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase">
+              Click anywhere to start with sound
+            </span>
+          </div>
         )}
 
-        {/* Minimalist Hairline Progress Bar */}
-        <div className="mt-6 w-48 sm:w-60 space-y-2">
-          <div className="h-[2px] w-full bg-slate-900 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-75 relative"
-              style={{ width: `${progress}%` }}
-            >
-              <span className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_8px_#ffffff]" />
+        {/* Minimalist Hairline Progress Bar (Synchronized with 2.4s Audio Playback) */}
+        {status === 'playing' && (
+          <div className="mt-8 w-48 sm:w-60 space-y-2 animate-fade-in">
+            <div className="h-[2px] w-full bg-slate-900 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-75 relative"
+                style={{ width: `${progress}%` }}
+              >
+                <span className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full shadow-[0_0_8px_#ffffff]" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
+              <span>PROTOCOL CANONICAL</span>
+              <span className="text-cyan-400 font-semibold">{progress}%</span>
             </div>
           </div>
-
-          <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
-            <span>PROTOCOL CANONICAL</span>
-            <span className="text-cyan-400 font-semibold">{progress}%</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Subtle bottom note */}
