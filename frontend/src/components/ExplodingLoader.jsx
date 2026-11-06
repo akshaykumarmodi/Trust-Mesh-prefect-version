@@ -1,24 +1,37 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Shield, Volume2, Sparkles } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 const LETTERS = ['T', 'R', 'U', 'S', 'T', 'M', 'E', 'S', 'H'];
 
-// Global singleton audio instance to bypass browser gesture boundaries across components
+// Global singleton cinema audio instance to maintain continuous playback across views
 let globalCinemaAudio = null;
+
+export function getCinemaAudio() {
+  if (typeof window === 'undefined') return null;
+  if (!globalCinemaAudio) {
+    globalCinemaAudio = new Audio('/cinema-intro.wav');
+    globalCinemaAudio.preload = 'auto';
+    globalCinemaAudio.volume = 1.0;
+    globalCinemaAudio.setAttribute('playsinline', 'true');
+  }
+  return globalCinemaAudio;
+}
 
 export function playGlobalCinemaAudio() {
   try {
-    if (!globalCinemaAudio) {
-      globalCinemaAudio = new Audio('/cinema-intro.wav');
-      globalCinemaAudio.volume = 1.0;
-      globalCinemaAudio.preload = 'auto';
-      globalCinemaAudio.setAttribute('playsinline', 'true');
+    const audio = getCinemaAudio();
+    if (!audio) return Promise.resolve();
+
+    // If already playing smoothly near the start, let it continue uninterrupted
+    if (!audio.paused && audio.currentTime > 0 && audio.currentTime < 2.2) {
+      return Promise.resolve();
     }
-    globalCinemaAudio.currentTime = 0;
-    const playPromise = globalCinemaAudio.play();
-    return playPromise;
+
+    audio.currentTime = 0;
+    audio.volume = 1.0;
+    const playPromise = audio.play();
+    return playPromise || Promise.resolve();
   } catch (err) {
-    console.warn('[Cinema Audio] Initial play deferred until interaction:', err);
     return Promise.reject(err);
   }
 }
@@ -26,83 +39,54 @@ export function playGlobalCinemaAudio() {
 export default function ExplodingLoader({ onComplete }) {
   const [progress, setProgress] = useState(0);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const hasTriggeredAudio = useRef(false);
-  const audioElementRef = useRef(null);
-  const soundButtonRef = useRef(null);
-  const topSoundButtonRef = useRef(null);
+  const audioStartedRef = useRef(false);
 
-  // Trigger sound automatically
-  const triggerAudio = useCallback(async () => {
-    if (hasTriggeredAudio.current) return;
+  // Play audio automatically without requiring any manual button click
+  const startAudioPlayback = useCallback(() => {
+    if (audioStartedRef.current) return;
     try {
-      if (audioElementRef.current) {
-        audioElementRef.current.volume = 1.0;
-        const playPromise = audioElementRef.current.play();
-        if (playPromise !== undefined) {
-          await playPromise;
-          hasTriggeredAudio.current = true;
-          setIsPlayingAudio(true);
-          return;
-        }
-      }
-      const promise = playGlobalCinemaAudio();
-      if (promise && typeof promise.then === 'function') {
-        await promise;
-        hasTriggeredAudio.current = true;
-        setIsPlayingAudio(true);
+      const p = playGlobalCinemaAudio();
+      if (p && typeof p.then === 'function') {
+        p.then(() => {
+          audioStartedRef.current = true;
+        }).catch(() => {
+          // If browser policy deferred cold unmuted playback, listeners will unlock on first gesture
+        });
+      } else {
+        audioStartedRef.current = true;
       }
     } catch {
-      // Browser blocked cold unsolicited autoplay; will unlock on first user gesture
+      // Ignored
     }
   }, []);
 
-  // Multi-tiered automatic start:
-  // 1. Programmatically click sound buttons automatically when entering
-  // 2. Global gesture listeners (triggers the instant user touches mouse, screen, or keyboard)
+  // Automatic Audio Playback on Mount:
+  // 1. Plays immediately as soon as the component loads
+  // 2. Retries after brief DOM initialization ticks
+  // 3. Captures any user interaction on the window to immediately unlock if blocked by browser
   useEffect(() => {
-    if (soundButtonRef.current) {
-      soundButtonRef.current.click();
-    }
-    if (topSoundButtonRef.current) {
-      topSoundButtonRef.current.click();
-    }
-    triggerAudio();
+    startAudioPlayback();
 
-    const t1 = setTimeout(() => {
-      if (soundButtonRef.current) soundButtonRef.current.click();
-      if (topSoundButtonRef.current) topSoundButtonRef.current.click();
-      triggerAudio();
-    }, 50);
+    const t1 = setTimeout(startAudioPlayback, 30);
+    const t2 = setTimeout(startAudioPlayback, 120);
 
-    const t2 = setTimeout(() => {
-      if (!hasTriggeredAudio.current) {
-        if (soundButtonRef.current) soundButtonRef.current.click();
-        triggerAudio();
-      }
-    }, 200);
-
-    const handleUnlockGesture = () => {
-      if (soundButtonRef.current) soundButtonRef.current.click();
-      triggerAudio();
+    const unlockEvents = ['pointerdown', 'mousedown', 'touchstart', 'keydown', 'click'];
+    const handleInteraction = () => {
+      startAudioPlayback();
     };
 
-    window.addEventListener('pointerdown', handleUnlockGesture);
-    window.addEventListener('touchstart', handleUnlockGesture);
-    window.addEventListener('keydown', handleUnlockGesture);
-    window.addEventListener('click', handleUnlockGesture);
-    window.addEventListener('mousemove', handleUnlockGesture, { once: true });
+    unlockEvents.forEach((evt) => {
+      window.addEventListener(evt, handleInteraction, { capture: true, once: true });
+    });
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      window.removeEventListener('pointerdown', handleUnlockGesture);
-      window.removeEventListener('touchstart', handleUnlockGesture);
-      window.removeEventListener('keydown', handleUnlockGesture);
-      window.removeEventListener('click', handleUnlockGesture);
-      window.removeEventListener('mousemove', handleUnlockGesture);
+      unlockEvents.forEach((evt) => {
+        window.removeEventListener(evt, handleInteraction, { capture: true });
+      });
     };
-  }, [triggerAudio]);
+  }, [startAudioPlayback]);
 
   // Loading timeline progression (~2.1s total)
   useEffect(() => {
@@ -144,49 +128,20 @@ export default function ExplodingLoader({ onComplete }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSkip]);
 
-  const handleScreenClick = () => {
-    if (!hasTriggeredAudio.current) {
-      triggerAudio();
-    }
-  };
-
   return (
     <div
-      onClick={handleScreenClick}
+      onClick={startAudioPlayback}
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#02050b] overflow-hidden select-none transition-all duration-600 ${
         isFadingOut ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Native HTML5 Audio for Maximum Browser Autoplay Compatibility */}
-      <audio
-        ref={audioElementRef}
-        src="/cinema-intro.wav"
-        preload="auto"
-        autoPlay
-        playsInline
-        onPlay={() => setIsPlayingAudio(true)}
-      />
-
       {/* Soft luxury ambient spotlight */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,rgba(15,23,42,0.4)_45%,#02050b_75%)] pointer-events-none" />
       <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/85 to-transparent pointer-events-none" />
       <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />
 
-      {/* Top Controls: Cinema Sound Status & Skip Button */}
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 pointer-events-auto">
-        <button
-          ref={topSoundButtonRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            triggerAudio();
-          }}
-          className="px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-all flex items-center gap-1.5 backdrop-blur-md cursor-pointer shadow-sm"
-          title="Play energetic movie intro sound"
-        >
-          <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'text-cyan-400' : 'text-slate-500'}`} />
-          <span>{isPlayingAudio ? 'Sound: On' : 'Play Sound'}</span>
-        </button>
-
+      {/* Top Controls: Clean Skip Button */}
+      <div className="absolute top-6 right-6 z-20 pointer-events-auto">
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -250,23 +205,8 @@ export default function ExplodingLoader({ onComplete }) {
           <span className="w-1 h-1 rounded-full bg-cyan-400" />
         </div>
 
-        {/* Audio Trigger Prompt (Automatically clicked on enter) */}
-        {!isPlayingAudio && (
-          <button
-            ref={soundButtonRef}
-            onClick={(e) => {
-              e.stopPropagation();
-              triggerAudio();
-            }}
-            className="mt-4 px-4 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-semibold flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)] animate-pulse transition-all cursor-pointer"
-          >
-            <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Sound Enabled 🔊</span>
-          </button>
-        )}
-
         {/* Minimalist Hairline Progress Bar */}
-        <div className="mt-6 w-48 sm:w-60 space-y-2">
+        <div className="mt-8 w-48 sm:w-60 space-y-2">
           <div className="h-[2px] w-full bg-slate-900 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-75 relative"
