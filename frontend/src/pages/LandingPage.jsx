@@ -1,5 +1,6 @@
 import React from 'react';
 import HeroNetworkCanvas from '../components/HeroNetworkCanvas';
+import { playGlobalCinemaAudio } from '../components/ExplodingLoader';
 import {
   Shield,
   Network,
@@ -41,9 +42,12 @@ export default function LandingPage({ onEnterApp, onReplayIntro }) {
           <div className="flex items-center gap-3 sm:gap-4 pr-14 sm:pr-18">
             {onReplayIntro && (
               <button
-                onClick={onReplayIntro}
+                onClick={() => {
+                  playGlobalCinemaAudio();
+                  onReplayIntro();
+                }}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-semibold transition-all cursor-pointer shadow-sm"
-                title="Replay cinematic Netflix-style TrustMesh intro"
+                title="Replay cinematic Netflix-style TrustMesh intro with sound"
               >
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Intro Animation</span>
