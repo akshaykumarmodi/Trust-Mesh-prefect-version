@@ -231,6 +231,7 @@ export default function App() {
           <AdminActivityView
             onOpenAuth={() => setAuthModalOpen(true)}
             currentUser={currentUser}
+            theme={theme}
           />
         )}
         {currentView === 'settings' && <SettingsView aiStatus={aiStatus} />}
