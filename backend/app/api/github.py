@@ -277,12 +277,6 @@ def get_project_pull_requests(
     """
     project = GitHubService.find_project(db, project_id)
     if not project:
-        try:
-            project = GitHubService.auto_register_github_project(db, project_id)
-        except Exception:
-            project = None
-
-    if not project:
         raise HTTPException(
             status_code=404,
             detail=f"Project '{project_id}' is not registered in TrustMesh. Use 'Import GitHub Repo' to register it."
