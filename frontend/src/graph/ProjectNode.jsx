@@ -5,15 +5,21 @@ import { FolderGit2, Star, ShieldCheck, AlertTriangle } from 'lucide-react';
 export default memo(function ProjectNode({ data, selected }) {
   return (
     <div
-      className={`min-w-[210px] rounded-xl p-3.5 transition-all duration-200 ${
+      className={`project-node min-w-[210px] rounded-xl p-3.5 transition-all duration-200 ${
         selected
           ? 'bg-slate-900/95 border-2 border-cyan-400 shadow-[0_0_24px_rgba(6,182,212,0.4)] scale-105'
-          : 'bg-slate-900/80 border border-slate-700/70 hover:border-cyan-500/50 shadow-lg'
+          : 'bg-slate-900/85 border border-slate-700/70 hover:border-cyan-500/50 shadow-lg'
       } backdrop-blur-md`}
     >
       <Handle
         type="target"
         position={Position.Top}
+        className="!w-2.5 !h-2.5 !bg-cyan-400 !border-slate-900"
+      />
+      <Handle
+        type="target"
+        id="left-target"
+        position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-cyan-400 !border-slate-900"
       />
 
@@ -51,6 +57,12 @@ export default memo(function ProjectNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Bottom}
+        className="!w-2.5 !h-2.5 !bg-cyan-400 !border-slate-900"
+      />
+      <Handle
+        type="source"
+        id="right-source"
+        position={Position.Right}
         className="!w-2.5 !h-2.5 !bg-cyan-400 !border-slate-900"
       />
     </div>
