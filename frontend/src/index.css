@@ -257,6 +257,62 @@ html.dark .admin-button-alt:hover {
   color: #ffffff;
 }
 
+/* Federation / Settings Dark Mode Styles */
+html.dark .fed-card {
+  background-color: rgba(9, 14, 26, 0.85);
+  border-color: rgba(30, 41, 59, 0.8);
+  color: #f1f5f9;
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .fed-subcard {
+  background-color: rgba(15, 23, 42, 0.85);
+  border-color: rgba(30, 41, 59, 0.8);
+  color: #f1f5f9;
+}
+
+html.dark .fed-banner {
+  background: linear-gradient(135deg, #0c1322 0%, #080d18 50%, #04070d 100%);
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+html.dark .fed-select,
+html.dark .fed-input {
+  background-color: rgba(15, 23, 42, 0.9);
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html.dark .fed-pre {
+  background-color: #03060c;
+  color: #22d3ee;
+  border-color: rgba(30, 41, 59, 0.8);
+}
+
+html.dark .fed-title {
+  color: #ffffff;
+}
+
+html.dark .fed-muted {
+  color: #94a3b8;
+}
+
+html.dark .fed-border-t {
+  border-color: rgba(30, 41, 59, 0.8);
+}
+
+html.dark .fed-button-alt {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  color: #cbd5e1;
+}
+
+html.dark .fed-button-alt:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
 /* ==========================================================================
    LIGHT MODE PALETTE & THEME OVERRIDES (Deep rich text, maximum contrast)
    ========================================================================== */
@@ -622,4 +678,60 @@ html.light .contributor-node {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+}
+
+/* Federation / Settings Light Mode Overrides */
+html.light .fed-card {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #020617 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.light .fed-subcard {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #020617 !important;
+}
+
+html.light .fed-banner {
+  background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 50%, #f1f5f9 100%) !important;
+  border-color: #94a3b8 !important;
+  box-shadow: 0 8px 30px -4px rgba(2, 132, 199, 0.15) !important;
+}
+
+html.light .fed-select,
+html.light .fed-input {
+  background-color: #ffffff !important;
+  border-color: #94a3b8 !important;
+  color: #020617 !important;
+}
+
+html.light .fed-pre {
+  background-color: #020617 !important;
+  color: #22d3ee !important;
+  border-color: #1e293b !important;
+}
+
+html.light .fed-title {
+  color: #020617 !important;
+}
+
+html.light .fed-muted {
+  color: #1e293b !important;
+}
+
+html.light .fed-border-t {
+  border-color: #cbd5e1 !important;
+}
+
+html.light .fed-button-alt {
+  background-color: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #090d16 !important;
+}
+
+html.light .fed-button-alt:hover {
+  background-color: #e2e8f0 !important;
+  color: #020617 !important;
 }
