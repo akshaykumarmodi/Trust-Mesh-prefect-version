@@ -1,185 +1,78 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Shield, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Shield, Volume2, Sparkles } from 'lucide-react';
 
 const LETTERS = ['T', 'R', 'U', 'S', 'T', 'M', 'E', 'S', 'H'];
 
-/**
- * Web Audio API Engine: Synthesizes an energetic, deep cinematic movie studio
- * opening sound (like the iconic Netflix "Ta-dum" / HBO / Dolby intro chord with
- * chest-thumping sub-bass impact, resonant choir/vocal formant shimmer, and specular glint sheen).
- * Zero external downloads, zero latency, 100% offline safe.
- */
-function createCinematicMovieSound(ctx) {
-  const now = ctx.currentTime + 0.05; // tiny pre-delay for hardware clock stabilization
+// Global singleton audio instance to bypass browser gesture boundaries across components
+let globalCinemaAudio = null;
 
-  // Master Gain Node
-  const masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0.9, now);
-  masterGain.connect(ctx.destination);
-
-  // Soft-Clipping Distortion for Rich Analog Movie Theater Warmth
-  const waveShaper = ctx.createWaveShaper();
-  const n_samples = 4096;
-  const curve = new Float32Array(n_samples);
-  for (let i = 0; i < n_samples; ++i) {
-    const x = (i * 2) / n_samples - 1;
-    curve[i] = ((Math.PI + 5) * x) / (Math.PI + 5 * Math.abs(x));
+export function playGlobalCinemaAudio() {
+  try {
+    if (!globalCinemaAudio) {
+      globalCinemaAudio = new Audio('/cinema-intro.wav');
+      globalCinemaAudio.volume = 1.0;
+      globalCinemaAudio.preload = 'auto';
+      globalCinemaAudio.setAttribute('playsinline', 'true');
+    }
+    globalCinemaAudio.currentTime = 0;
+    const playPromise = globalCinemaAudio.play();
+    return playPromise;
+  } catch (err) {
+    console.warn('[Cinema Audio] Initial play deferred until interaction:', err);
+    return Promise.reject(err);
   }
-  waveShaper.curve = curve;
-  waveShaper.connect(masterGain);
-
-  // 1. Initial "Ta..." Impact (110Hz -> 45Hz)
-  const osc1 = ctx.createOscillator();
-  const gain1 = ctx.createGain();
-  osc1.type = 'sine';
-  osc1.frequency.setValueAtTime(110, now);
-  osc1.frequency.exponentialRampToValueAtTime(45, now + 0.16);
-  gain1.gain.setValueAtTime(0.5, now);
-  gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-  osc1.connect(gain1);
-  gain1.connect(waveShaper);
-  osc1.start(now);
-  osc1.stop(now + 0.22);
-
-  // 2. Main Massive Sub-Bass Impact "...DUM!" (+160ms)
-  const subTime = now + 0.16;
-  const osc2 = ctx.createOscillator();
-  const gain2 = ctx.createGain();
-  const filter2 = ctx.createBiquadFilter();
-  filter2.type = 'lowpass';
-  filter2.frequency.setValueAtTime(180, subTime);
-
-  osc2.type = 'sine';
-  osc2.frequency.setValueAtTime(145, subTime);
-  osc2.frequency.exponentialRampToValueAtTime(32, subTime + 1.5);
-
-  gain2.gain.setValueAtTime(0.001, subTime);
-  gain2.gain.linearRampToValueAtTime(0.95, subTime + 0.02);
-  gain2.gain.exponentialRampToValueAtTime(0.001, subTime + 1.7);
-
-  osc2.connect(filter2);
-  filter2.connect(gain2);
-  gain2.connect(waveShaper);
-  osc2.start(subTime);
-  osc2.stop(subTime + 1.75);
-
-  // 3. Energetic Cinematic Choir / Vocal Formant Swell ("Ahhhh")
-  // D Major Triad: D3 (146.8Hz), A3 (220Hz), D4 (293.7Hz), F#4 (370Hz), A4 (440Hz), D5 (587Hz)
-  const chord = [146.83, 220.0, 293.66, 369.99, 440.0, 587.33];
-  chord.forEach((freq, idx) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
-    osc.frequency.setValueAtTime(freq, subTime);
-    osc.detune.setValueAtTime((idx - 2.5) * 6, subTime);
-
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1200 + idx * 80, subTime);
-    filter.Q.setValueAtTime(2.2, subTime);
-
-    gain.gain.setValueAtTime(0.001, subTime);
-    gain.gain.linearRampToValueAtTime(0.12 / (1 + idx * 0.3), subTime + 0.35);
-    gain.gain.exponentialRampToValueAtTime(0.0001, subTime + 1.9);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(waveShaper);
-    osc.start(subTime);
-    osc.stop(subTime + 1.95);
-  });
-
-  // 4. Specular Anamorphic Glint Sheen (High metallic shimmer as letters assemble)
-  const glintTime = now + 0.5;
-  const oscGlint = ctx.createOscillator();
-  const gainGlint = ctx.createGain();
-  const filterGlint = ctx.createBiquadFilter();
-
-  oscGlint.type = 'sine';
-  oscGlint.frequency.setValueAtTime(2200, glintTime);
-  oscGlint.frequency.exponentialRampToValueAtTime(4200, glintTime + 0.4);
-
-  filterGlint.type = 'highpass';
-  filterGlint.frequency.setValueAtTime(1900, glintTime);
-
-  gainGlint.gain.setValueAtTime(0.001, glintTime);
-  gainGlint.gain.linearRampToValueAtTime(0.06, glintTime + 0.12);
-  gainGlint.gain.exponentialRampToValueAtTime(0.0001, glintTime + 0.48);
-
-  oscGlint.connect(filterGlint);
-  filterGlint.connect(gainGlint);
-  gainGlint.connect(masterGain);
-  oscGlint.start(glintTime);
-  oscGlint.stop(glintTime + 0.52);
 }
 
 export default function ExplodingLoader({ onComplete }) {
   const [progress, setProgress] = useState(0);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const hasStartedAudio = useRef(false);
-  const audioCtxRef = useRef(null);
+  const hasTriggeredAudio = useRef(false);
 
-  // Bulletproof Audio Unlock Engine
-  const startAudio = useCallback(async () => {
-    if (hasStartedAudio.current) return;
+  // Trigger sound automatically
+  const triggerAudio = useCallback(async () => {
+    if (hasTriggeredAudio.current) return;
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-
-      let ctx = audioCtxRef.current;
-      if (!ctx || ctx.state === 'closed') {
-        ctx = new AudioCtx();
-        audioCtxRef.current = ctx;
-      }
-
-      if (ctx.state === 'suspended') {
-        await ctx.resume();
-      }
-
-      if (ctx.state === 'running') {
-        hasStartedAudio.current = true;
+      const promise = playGlobalCinemaAudio();
+      if (promise && typeof promise.then === 'function') {
+        await promise;
+        hasTriggeredAudio.current = true;
         setIsPlayingAudio(true);
-        createCinematicMovieSound(ctx);
       }
-    } catch (err) {
-      console.warn('[Autoplay Info] Audio awaiting first gesture:', err);
+    } catch {
+      // Browser blocked cold unsolicited autoplay; will unlock on first user gesture
     }
   }, []);
 
-  // Multi-pronged auto-start: Immediate attempt + global gesture listeners
+  // Multi-tiered automatic start:
+  // 1. Immediate mount attempt (works when domain has interaction or MEI threshold)
+  // 2. Global gesture listeners (triggers the instant user touches mouse, screen, or keyboard)
   useEffect(() => {
-    // 1. Attempt automatic immediate playback
-    startAudio();
+    triggerAudio();
 
-    // 2. Set up global listeners for ANY interaction to instantly unlock audio
-    const handleAnyGesture = () => {
-      startAudio();
+    const handleUnlockGesture = () => {
+      triggerAudio();
     };
 
-    window.addEventListener('pointerdown', handleAnyGesture);
-    window.addEventListener('touchstart', handleAnyGesture);
-    window.addEventListener('keydown', handleAnyGesture);
-    window.addEventListener('click', handleAnyGesture);
-    window.addEventListener('mousemove', handleAnyGesture, { once: true });
+    window.addEventListener('pointerdown', handleUnlockGesture);
+    window.addEventListener('touchstart', handleUnlockGesture);
+    window.addEventListener('keydown', handleUnlockGesture);
+    window.addEventListener('click', handleUnlockGesture);
+    window.addEventListener('mousemove', handleUnlockGesture, { once: true });
 
     return () => {
-      window.removeEventListener('pointerdown', handleAnyGesture);
-      window.removeEventListener('touchstart', handleAnyGesture);
-      window.removeEventListener('keydown', handleAnyGesture);
-      window.removeEventListener('click', handleAnyGesture);
-      window.removeEventListener('mousemove', handleAnyGesture);
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close().catch(() => {});
-      }
+      window.removeEventListener('pointerdown', handleUnlockGesture);
+      window.removeEventListener('touchstart', handleUnlockGesture);
+      window.removeEventListener('keydown', handleUnlockGesture);
+      window.removeEventListener('click', handleUnlockGesture);
+      window.removeEventListener('mousemove', handleUnlockGesture);
     };
-  }, [startAudio]);
+  }, [triggerAudio]);
 
-  // Smooth loading progression timeline (~2.0s total - clean and cinematic)
+  // Loading timeline progression (~2.1s total)
   useEffect(() => {
     const startTime = Date.now();
-    const duration = 2000;
+    const duration = 2100;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -191,7 +84,7 @@ export default function ExplodingLoader({ onComplete }) {
         setIsFadingOut(true);
         setTimeout(() => {
           if (onComplete) onComplete();
-        }, 280);
+        }, 300);
       }
     }, 16);
 
@@ -205,7 +98,7 @@ export default function ExplodingLoader({ onComplete }) {
     }, 120);
   }, [onComplete]);
 
-  // Keyboard shortcut: Escape to skip
+  // Escape to skip
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -216,36 +109,36 @@ export default function ExplodingLoader({ onComplete }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSkip]);
 
-  const handleContainerClick = () => {
-    if (!hasStartedAudio.current) {
-      startAudio();
+  const handleScreenClick = () => {
+    if (!hasTriggeredAudio.current) {
+      triggerAudio();
     }
   };
 
   return (
     <div
-      onClick={handleContainerClick}
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#03060c] overflow-hidden select-none transition-all duration-600 ${
+      onClick={handleScreenClick}
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#02050b] overflow-hidden select-none transition-all duration-600 ${
         isFadingOut ? 'opacity-0 scale-[1.02] pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* Soft, luxury ambient vignette lighting */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.12)_0%,rgba(15,23,42,0.35)_45%,#03060c_75%)] pointer-events-none" />
-      <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+      {/* Soft luxury ambient spotlight */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(6,182,212,0.14)_0%,rgba(15,23,42,0.4)_45%,#02050b_75%)] pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-black/85 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/85 to-transparent pointer-events-none" />
 
       {/* Top Controls: Cinema Sound Status & Skip Button */}
       <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 pointer-events-auto">
         <button
           onClick={(e) => {
             e.stopPropagation();
-            startAudio();
+            triggerAudio();
           }}
-          className="px-3.5 py-1.5 rounded-full bg-slate-900/70 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1.5 backdrop-blur-md cursor-pointer"
+          className="px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-all flex items-center gap-1.5 backdrop-blur-md cursor-pointer shadow-sm"
           title="Play energetic movie intro sound"
         >
           <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'text-cyan-400' : 'text-slate-500'}`} />
-          <span>{isPlayingAudio ? 'Cinema Sound: On' : 'Play Sound'}</span>
+          <span>{isPlayingAudio ? 'Cinema Sound: Active' : 'Play Sound'}</span>
         </button>
 
         <button
@@ -253,7 +146,7 @@ export default function ExplodingLoader({ onComplete }) {
             e.stopPropagation();
             handleSkip();
           }}
-          className="px-4 py-1.5 rounded-full bg-slate-900/70 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1.5 backdrop-blur-md cursor-pointer"
+          className="px-4 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-all flex items-center gap-1.5 backdrop-blur-md cursor-pointer shadow-sm"
         >
           <span>Skip</span>
           <span className="text-cyan-400">→</span>
@@ -276,7 +169,6 @@ export default function ExplodingLoader({ onComplete }) {
           {/* Staggered Letter Assembly */}
           <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[0.22em] sm:tracking-[0.32em] uppercase select-none flex items-center justify-center font-display">
             {LETTERS.map((char, index) => {
-              // Smooth, luxurious stagger delay for each letter
               const delay = `${index * 55}ms`;
               return (
                 <span
@@ -317,7 +209,7 @@ export default function ExplodingLoader({ onComplete }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              startAudio();
+              triggerAudio();
             }}
             className="mt-4 px-4 py-1.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-semibold flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.25)] animate-pulse transition-all cursor-pointer"
           >
