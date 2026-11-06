@@ -1,8 +1,10 @@
+import json
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models import Project, ProjectTrustEdge, Vouch, Denouncement, Contributor, User
+from app.models import Project, ProjectTrustEdge, Vouch, Denouncement, Contributor, User, GitHubPullRequest
 from app.schemas import (
     ProjectOut,
     ProjectCreate,
@@ -137,6 +139,73 @@ def update_project(
     )
 
     return proj
+
+
+@router.delete("/{project_id}", status_code=status.HTTP_200_OK)
+def delete_project(
+    project_id: str,
+    user: Optional[User] = Depends(optional_current_user),
+    db: Session = Depends(get_db)
+):
+    proj = GitHubService.find_project(db, project_id)
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    deleted_id = proj.id
+    deleted_name = proj.name
+    deleted_slug = proj.slug
+
+    # 1. Delete associated trust edges (incoming and outgoing)
+    db.query(ProjectTrustEdge).filter(
+        (ProjectTrustEdge.source_project_id == deleted_id) |
+        (ProjectTrustEdge.target_project_id == deleted_id)
+    ).delete(synchronize_session=False)
+
+    # 2. Delete associated vouches and denouncements referencing this project
+    db.query(Vouch).filter(Vouch.source_project_id == deleted_id).delete(synchronize_session=False)
+    db.query(Denouncement).filter(Denouncement.reporting_project_id == deleted_id).delete(synchronize_session=False)
+
+    # 3. Delete associated pull requests
+    db.query(GitHubPullRequest).filter(GitHubPullRequest.project_id == deleted_id).delete(synchronize_session=False)
+
+    # 4. Delete the project record
+    db.delete(proj)
+    db.commit()
+
+    # 5. Remove from authoritative_seed.json if present
+    try:
+        seed_path = Path(__file__).resolve().parent.parent / "database" / "authoritative_seed.json"
+        if seed_path.is_file():
+            with open(seed_path, "r", encoding="utf-8") as f:
+                sdata = json.load(f)
+            if "Project" in sdata:
+                sdata["Project"] = [
+                    p for p in sdata["Project"]
+                    if p.get("id") != deleted_id and p.get("slug") != deleted_slug
+                ]
+                with open(seed_path, "w", encoding="utf-8") as f:
+                    json.dump(sdata, f, indent=2)
+    except Exception as exc:
+        print(f"[Delete Project Warning] Could not update authoritative_seed.json: {exc}")
+
+    ActivityLogger.log(
+        db=db,
+        event_type="PROJECT_DELETED",
+        event_description=f"Project '{deleted_name}' ({deleted_slug}) was deleted from TrustMesh",
+        user=user,
+        resource_type="project",
+        resource_id=deleted_id,
+        project_name=deleted_name,
+        status="SUCCESS",
+        metadata={"deleted_id": deleted_id, "slug": deleted_slug}
+    )
+
+    return {
+        "status": "success",
+        "message": f"Project '{deleted_name}' was successfully deleted.",
+        "deleted_id": deleted_id
+    }
+
 
 @router.post("/{project_id}/peers")
 def set_project_peer_weight(
