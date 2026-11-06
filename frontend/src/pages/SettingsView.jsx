@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Check,
   Trash2,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
 const SAMPLE_PEER_BUNDLE = {
@@ -76,7 +77,7 @@ const SAMPLE_PEER_BUNDLE = {
   }
 };
 
-export default function SettingsView({ aiStatus, theme }) {
+export default function SettingsView({ aiStatus, theme, onReplayIntro }) {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -273,12 +274,22 @@ export default function SettingsView({ aiStatus, theme }) {
       <div className="fed-banner relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-[#0c1322] via-[#080d18] to-[#04070d] p-6 lg:p-7 shadow-[0_0_40px_rgba(6,182,212,0.1)]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
                 FEDERATION NODE ACTIVE
               </span>
               <span className="fed-muted text-xs text-slate-400 font-mono">TrustMesh Protocol v1.0.0</span>
+              {onReplayIntro && (
+                <button
+                  onClick={onReplayIntro}
+                  className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 transition-all cursor-pointer shadow-sm ml-auto sm:ml-0"
+                  title="Replay Netflix-style TrustMesh brand intro animation"
+                >
+                  <Sparkles className="w-3 h-3 text-cyan-400" />
+                  <span>Replay Intro Animation</span>
+                </button>
+              )}
             </div>
             <h1 className="fed-title text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
               Settings & Decentralized Federation

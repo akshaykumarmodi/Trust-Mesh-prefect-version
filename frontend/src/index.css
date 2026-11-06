@@ -132,6 +132,106 @@
 }
 
 /* ==========================================================================
+   NETFLIX-STYLE CINEMATIC TRUSTMESH BRAND INTRO ANIMATIONS
+   ========================================================================== */
+
+/* Horizon Beam Laser Reveal */
+@keyframes netflix-horizon {
+  0% { transform: scaleX(0); opacity: 0; }
+  40% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1.8); opacity: 0; }
+}
+
+/* Horizontal Glint Light Sweep */
+@keyframes netflix-light-sweep {
+  0% { transform: translateX(-150%) skewX(-25deg); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.9; }
+  100% { transform: translateX(250%) skewX(-25deg); opacity: 0; }
+}
+
+/* Dramatic Letter Rise from Void */
+@keyframes netflix-letter-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(35px) scale(0.85);
+    filter: blur(14px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Multi-Spectral Vertical Ribbon Stream Detonation */
+@keyframes netflix-ribbon-stream {
+  0% {
+    transform: scaleY(0.05) translateY(0) scaleX(0.8);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+    transform: scaleY(1.4) translateY(0) scaleX(1.2);
+  }
+  65% {
+    opacity: 0.95;
+    transform: scaleY(3.6) translateY(0) scaleX(1.8) translateZ(80px);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(6.5) translateY(0) scaleX(3.2) translateZ(350px);
+  }
+}
+
+/* Anamorphic Lens Flare Flash Burst */
+@keyframes netflix-flare-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.15) scaleY(0.3);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.5) scaleY(0.8);
+  }
+  75% {
+    opacity: 0.85;
+    transform: scale(2.4) scaleY(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.2) scaleY(1.8);
+  }
+}
+
+/* Subtle Cinematic Screen Rumble */
+@keyframes netflix-rumble {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 1.5px); }
+  40% { transform: translate(2px, -1.5px); }
+  60% { transform: translate(-1.5px, -1px); }
+  80% { transform: translate(1px, 1.5px); }
+  100% { transform: translate(0, 0); }
+}
+
+.animate-netflix-horizon {
+  animation: netflix-horizon 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-netflix-sweep {
+  animation: netflix-light-sweep 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-netflix-rumble {
+  animation: netflix-rumble 0.4s ease-in-out;
+}
+
+/* ==========================================================================
    DARK MODE EXPLICIT RULES & SELECT/OPTION CONTRAST
    ========================================================================== */
 html.dark {

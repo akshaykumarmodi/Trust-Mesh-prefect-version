@@ -51,23 +51,14 @@ function getInitialView() {
   return 'landing';
 }
 
-function getInitialLoading(initialView) {
-  // Skip exploding intro when refreshing or directly visiting an internal route
-  if (initialView !== 'landing') {
-    return false;
-  }
-  try {
-    const introDone = sessionStorage.getItem('trustmesh_intro_completed');
-    if (introDone === 'true') {
-      return false;
-    }
-  } catch {}
+function getInitialLoading() {
+  // Always play the cinematic Netflix-style TrustMesh intro on page load / refresh
   return true;
 }
 
 export default function App() {
   const [initialView] = useState(getInitialView);
-  const [isLoading, setIsLoading] = useState(() => getInitialLoading(initialView));
+  const [isLoading, setIsLoading] = useState(getInitialLoading);
   const [currentView, setCurrentView] = useState(initialView);
   const [aiStatus, setAiStatus] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -157,9 +148,6 @@ export default function App() {
 
   const handleLoaderComplete = () => {
     setIsLoading(false);
-    try {
-      sessionStorage.setItem('trustmesh_intro_completed', 'true');
-    } catch {}
   };
 
   const handleLogout = async () => {
@@ -174,7 +162,7 @@ export default function App() {
     }
   };
 
-  // Show Moving Exploding Loader on initial site visit
+  // Show Cinematic Netflix-style TrustMesh Loader on initial site visit / refresh
   if (isLoading) {
     return <ExplodingLoader onComplete={handleLoaderComplete} />;
   }
@@ -184,7 +172,10 @@ export default function App() {
     return (
       <>
         <PullRopeToggle theme={theme} onToggleTheme={handleToggleTheme} />
-        <LandingPage onEnterApp={(target) => handleNavigate(target || 'overview')} />
+        <LandingPage
+          onEnterApp={(target) => handleNavigate(target || 'overview')}
+          onReplayIntro={() => setIsLoading(true)}
+        />
       </>
     );
   }
@@ -197,6 +188,7 @@ export default function App() {
         currentView={currentView}
         onNavigate={handleNavigate}
         onOpenLanding={() => handleNavigate('landing')}
+        onReplayIntro={() => setIsLoading(true)}
         aiStatus={aiStatus}
         currentUser={currentUser}
         onOpenAuth={() => setAuthModalOpen(true)}
@@ -234,7 +226,13 @@ export default function App() {
             theme={theme}
           />
         )}
-        {currentView === 'settings' && <SettingsView aiStatus={aiStatus} theme={theme} />}
+        {currentView === 'settings' && (
+          <SettingsView
+            aiStatus={aiStatus}
+            theme={theme}
+            onReplayIntro={() => setIsLoading(true)}
+          />
+        )}
       </DashboardLayout>
 
       <AuthModal
