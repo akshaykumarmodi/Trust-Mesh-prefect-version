@@ -58,7 +58,7 @@ export default function PullRopeToggle({ theme, onToggleTheme }) {
 
   return (
     <div
-      className="fixed top-0 right-2 sm:right-3 md:right-4 z-[99] select-none pointer-events-auto"
+      className="fixed top-0 right-1 sm:right-1.5 md:right-2 z-[99] select-none pointer-events-auto"
       title={isDark ? 'Pull cord for Light Mode' : 'Pull cord for Dark Mode'}
     >
       {/* Ceiling Mount Bracket */}
@@ -116,8 +116,8 @@ export default function PullRopeToggle({ theme, onToggleTheme }) {
 
             {/* Small glowing pull indicator badge on hover */}
             <span
-              className={`absolute -bottom-6 right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 px-1.5 py-0.5 rounded text-[9px] font-mono tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none ${
-                isDark ? 'bg-slate-900 text-cyan-300 border border-cyan-500/40' : 'bg-white text-slate-800 border border-slate-300'
+              className={`absolute -bottom-6 right-0 px-2 py-0.5 rounded text-[9px] font-mono font-semibold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none ${
+                isDark ? 'bg-slate-900 text-cyan-300 border border-cyan-500/40' : 'bg-white text-slate-900 border border-slate-300'
               }`}
             >
               {isDark ? 'PULL FOR LIGHT' : 'PULL FOR DARK'}
