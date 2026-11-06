@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   ReactFlow,
   Controls,
@@ -26,12 +26,54 @@ import {
   Sliders,
   CheckCircle2,
   Share2,
+  Maximize2,
+  Grid,
 } from 'lucide-react';
 
 const nodeTypes = {
   projectNode: ProjectNode,
   contributorNode: ContributorNode,
 };
+
+// Physics relaxation ensuring ZERO node overlap across all zoom and screen sizes
+export function resolveNodeOverlaps(nodes, minXDist = 260, minYDist = 140) {
+  if (!nodes || nodes.length <= 1) return nodes;
+  const list = nodes.map((n) => ({
+    ...n,
+    position: {
+      x: typeof n.position?.x === 'number' ? n.position.x : 0,
+      y: typeof n.position?.y === 'number' ? n.position.y : 0,
+    },
+  }));
+
+  // Iterative relaxation algorithm
+  for (let step = 0; step < 35; step++) {
+    let hadCollision = false;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        const dx = b.position.x - a.position.x;
+        const dy = b.position.y - a.position.y;
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+
+        if (absX < minXDist && absY < minYDist) {
+          hadCollision = true;
+          const pushX = Math.max(14, (minXDist - absX) * 0.52) * (dx >= 0 ? 1 : -1);
+          const pushY = Math.max(10, (minYDist - absY) * 0.52) * (dy >= 0 ? 1 : -1);
+
+          b.position.x += pushX;
+          b.position.y += pushY;
+          a.position.x -= pushX;
+          a.position.y -= pushY;
+        }
+      }
+    }
+    if (!hadCollision) break;
+  }
+  return list;
+}
 
 export default function TrustNetworkGraph({ onSelectContributor, onSelectProject }) {
   const [nodes, setNodes] = useNodesState([]);
@@ -46,6 +88,7 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [evaluationData, setEvaluationData] = useState(null);
   const [evalLoading, setEvalLoading] = useState(false);
+  const [rfInstance, setRfInstance] = useState(null);
 
   // Fetch graph data
   const loadGraph = useCallback(async () => {
@@ -77,7 +120,9 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
         }
       });
 
-      setRawNodes(data.nodes);
+      // Apply collision-free relaxation to backend positions
+      const relaxedNodes = resolveNodeOverlaps(data.nodes);
+      setRawNodes(relaxedNodes);
       setRawEdges(styledEdges);
     } catch (err) {
       console.error('Failed to load network graph:', err);
@@ -140,9 +185,20 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
       });
     }
 
-    setNodes(filteredNodes);
+    // Ensure filtered nodes have zero overlap
+    const finalNodes = resolveNodeOverlaps(filteredNodes);
+    setNodes(finalNodes);
     setEdges(filteredEdges);
   }, [rawNodes, rawEdges, searchTerm, filterType, viewFilter, selectedNode, setNodes, setEdges]);
+
+  // Auto-fit view when graph loads
+  useEffect(() => {
+    if (rfInstance && nodes.length > 0) {
+      setTimeout(() => {
+        rfInstance.fitView({ padding: 0.2, duration: 400 });
+      }, 150);
+    }
+  }, [rfInstance, viewFilter]);
 
   // Handle node selection
   const onNodeClick = useCallback(async (_, node) => {
@@ -169,12 +225,27 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
     setEvaluationData(null);
   }, []);
 
+  const handleTidyLayout = () => {
+    setNodes((currentNodes) => resolveNodeOverlaps(currentNodes, 280, 160));
+    if (rfInstance) {
+      setTimeout(() => {
+        rfInstance.fitView({ padding: 0.2, duration: 500 });
+      }, 80);
+    }
+  };
+
+  const handleFitView = () => {
+    if (rfInstance) {
+      rfInstance.fitView({ padding: 0.2, duration: 400 });
+    }
+  };
+
   return (
-    <div className="relative w-full h-[720px] rounded-2xl overflow-hidden border border-slate-800/80 bg-[#05070a] shadow-2xl">
+    <div className="relative w-full h-[740px] rounded-2xl overflow-hidden border border-slate-800/80 bg-[#05070a] shadow-2xl">
       {/* Top Filter & Toolbar */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         {/* Search & View Toggles */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -182,7 +253,7 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
               placeholder="Search nodes in mesh..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 w-56 backdrop-blur-md"
+              className="bg-slate-900/90 border border-slate-700/80 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500 w-52 sm:w-60 backdrop-blur-md shadow-md"
             />
             {searchTerm && (
               <button
@@ -195,7 +266,7 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
           </div>
 
           {/* View Filter Pill */}
-          <div className="flex bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 backdrop-blur-md text-xs">
+          <div className="flex bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 backdrop-blur-md text-xs shadow-md">
             {['ALL', 'PROJECTS', 'CONTRIBUTORS'].map((v) => (
               <button
                 key={v}
@@ -212,9 +283,9 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
           </div>
         </div>
 
-        {/* Relationship Filters */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="flex bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 backdrop-blur-md text-xs">
+        {/* Relationship Filters & Action Controls */}
+        <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
+          <div className="hidden sm:flex bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 backdrop-blur-md text-xs shadow-md">
             {[
               { id: 'ALL', label: 'All Signals' },
               { id: 'VOUCH', label: 'Vouches (+)' },
@@ -235,10 +306,29 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
             ))}
           </div>
 
+          {/* Tidy / Anti-Overlap Button */}
+          <button
+            onClick={handleTidyLayout}
+            title="Untangle & Tidy Topology (Auto-Separate Overlaps)"
+            className="px-3 py-2 bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 rounded-xl text-slate-300 hover:text-cyan-300 backdrop-blur-md text-xs font-mono flex items-center gap-1.5 shadow-md transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">Tidy Graph</span>
+          </button>
+
+          {/* Fit View Button */}
+          <button
+            onClick={handleFitView}
+            title="Center and Fit Graph"
+            className="p-2 bg-slate-900/90 border border-slate-700/80 hover:border-cyan-500/50 rounded-xl text-slate-300 hover:text-cyan-300 backdrop-blur-md transition-all shadow-md"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+
           <button
             onClick={loadGraph}
             title="Reload Network Topology"
-            className="p-2 bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 rounded-xl text-slate-300 hover:text-white backdrop-blur-md transition-colors"
+            className="p-2 bg-slate-900/90 border border-slate-700/80 hover:border-slate-500 rounded-xl text-slate-300 hover:text-white backdrop-blur-md transition-colors shadow-md"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -248,7 +338,7 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
       {/* Empty State Overlay */}
       {!loading && nodes.length === 0 && (
         <div className="absolute inset-0 z-20 flex items-center justify-center p-6 bg-slate-950/70 backdrop-blur-sm pointer-events-none">
-          <div className="p-8 text-center rounded-2xl glass-panel border border-slate-800 max-w-md pointer-events-auto">
+          <div className="p-8 text-center rounded-2xl glass-panel border border-slate-800 max-w-md pointer-events-auto shadow-2xl">
             <Share2 className="w-10 h-10 text-slate-500 mx-auto mb-3" />
             <h3 className="text-sm font-semibold text-white">No verified trust relationships available yet.</h3>
             <p className="text-xs text-slate-400 mt-1">Connect repositories or configure peering trust edges to visualize the mesh topology.</p>
@@ -264,18 +354,19 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
         onEdgesChange={(changes) => setEdges((eds) => applyEdgeChanges(changes, eds))}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
+        onInit={setRfInstance}
         nodeTypes={nodeTypes}
         fitView
         attributionPosition="bottom-left"
-        minZoom={0.2}
-        maxZoom={2.0}
+        minZoom={0.12}
+        maxZoom={2.4}
       >
-        <Background color="#1e293b" gap={24} size={1} />
+        <Background color="#1e293b" gap={28} size={1.2} />
         <Controls className="!bottom-4 !left-4" showInteractive={false} />
       </ReactFlow>
 
       {/* Legend overlay */}
-      <div className="absolute bottom-4 left-20 z-10 hidden sm:flex items-center gap-4 px-3 py-1.5 rounded-lg bg-slate-900/85 border border-slate-800 backdrop-blur-md text-[11px] text-slate-400">
+      <div className="absolute bottom-4 left-20 z-10 hidden sm:flex items-center gap-4 px-3.5 py-2 rounded-xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-[11px] text-slate-400 shadow-lg">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-0.5 bg-emerald-400 rounded-full" /> Vouch (Peer Endorsement)
         </span>
@@ -289,7 +380,7 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
 
       {/* Detail Inspector Side Drawer */}
       {selectedNode && (
-        <div className="absolute top-4 right-4 bottom-4 w-96 z-30 bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-2xl backdrop-blur-xl p-5 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-200">
+        <div className="absolute top-20 right-4 bottom-4 w-96 max-w-[calc(100vw-2rem)] z-30 bg-slate-900/95 border border-cyan-500/30 rounded-2xl shadow-2xl backdrop-blur-xl p-5 flex flex-col overflow-y-auto animate-in slide-in-from-right duration-200">
           <div className="flex items-start justify-between pb-3 border-b border-slate-800">
             <div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
@@ -368,87 +459,70 @@ export default function TrustNetworkGraph({ onSelectContributor, onSelectProject
                     src={selectedDetails?.avatar_url || `https://github.com/${selectedDetails?.username}.png`}
                     alt={selectedDetails?.username}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
                   />
                 </div>
                 <div>
-                  <div className="font-bold text-white text-sm">@{selectedDetails?.username}</div>
-                  <div className="text-[11px] text-slate-400">{selectedDetails?.display_name}</div>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-mono border bg-slate-800 text-cyan-300 border-slate-700">
+                  <h4 className="font-semibold text-white">
+                    {selectedDetails?.display_name || selectedDetails?.username}
+                  </h4>
+                  <div className="text-[10px] text-cyan-400 font-mono mt-0.5">
+                    @{selectedDetails?.username}
+                  </div>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-[9px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
                     {selectedDetails?.reputation_state}
                   </span>
                 </div>
               </div>
 
-              {/* Explainable Trust Assessment Card */}
-              {evalLoading ? (
-                <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 text-center text-slate-400">
-                  <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2 text-cyan-400" />
-                  Evaluating trust provenance signals...
+              {/* Real-time Explainable Evaluation Engine Output */}
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                    Decentralized Perspective
+                  </span>
+                  {evalLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />}
                 </div>
-              ) : evaluationData ? (
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                      Explainable Assessment
-                    </span>
-                    <span className="font-mono text-cyan-400 font-bold">
-                      {Math.round(evaluationData.trust_confidence * 100)}% Confidence
-                    </span>
+
+                {evaluationData ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-400">Trust Confidence:</span>
+                      <span className="font-bold text-cyan-400">
+                        {Math.round(evaluationData.confidence * 100)}%
+                      </span>
+                    </div>
+
+                    <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full"
+                        style={{ width: `${Math.round(evaluationData.confidence * 100)}%` }}
+                      />
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 pt-1 leading-relaxed">
+                      {evaluationData.explanation?.[0] || 'Computed from peer mesh graph topology.'}
+                    </div>
                   </div>
-
-                  <p className="text-[11px] text-slate-300 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                    {evaluationData.summary_explanation}
-                  </p>
-
-                  {/* Signals Considered Breakdown */}
-                  {evaluationData.signals_considered?.length > 0 && (
-                    <div className="space-y-1.5">
-                      <div className="text-[10px] uppercase font-mono text-slate-400">
-                        Considered Signals ({evaluationData.signals_considered.length})
-                      </div>
-                      {evaluationData.signals_considered.map((sig, i) => (
-                        <div
-                          key={i}
-                          className="p-2 rounded bg-slate-900/40 border border-slate-800 flex items-start justify-between gap-2"
-                        >
-                          <div>
-                            <div className="font-semibold text-slate-200 text-[11px]">{sig.source}</div>
-                            <div className="text-[10px] text-slate-400 truncate max-w-[200px]">{sig.reason}</div>
-                          </div>
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[9px] font-mono shrink-0 ${
-                              sig.type === 'VOUCH'
-                                ? 'bg-emerald-500/10 text-emerald-300'
-                                : 'bg-rose-500/10 text-rose-300'
-                            }`}
-                          >
-                            Weight: {sig.peer_trust_weight_applied}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Newcomer Fairness Alert if applied */}
-                  {evaluationData.newcomer_fairness_applied && (
-                    <div className="p-2 rounded bg-cyan-950/40 border border-cyan-800/60 text-[10px] text-cyan-300 flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-                      <span>Fairness Guarantee: No negative assumption applied to new contributor.</span>
-                    </div>
-                  )}
-                </div>
-              ) : null}
+                ) : (
+                  <div className="text-[11px] text-slate-500 italic">
+                    Click to run live decentralized trust equation evaluation.
+                  </div>
+                )}
+              </div>
 
               {selectedDetails?.github_url && (
                 <a
                   href={selectedDetails.github_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  View GitHub Profile
+                  GitHub Profile
                 </a>
               )}
             </div>

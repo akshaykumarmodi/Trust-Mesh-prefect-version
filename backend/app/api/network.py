@@ -19,16 +19,16 @@ def get_network_graph(db: Session = Depends(get_db)):
     nodes: List[GraphNode] = []
     edges: List[GraphEdge] = []
 
-    # Position layout calculation (circular orbit layout for projects, clustered contributors)
-    proj_radius = 340
-    proj_center_x = 550
-    proj_center_y = 380
+    # Position layout calculation (Generous non-overlapping orbital & cluster topology)
+    center_x = 900
+    center_y = 700
+    proj_radius = 540
 
     proj_positions = {}
     for i, p in enumerate(projects):
         angle = (2 * math.pi / max(len(projects), 1)) * i - (math.pi / 2)
-        px = proj_center_x + proj_radius * math.cos(angle)
-        py = proj_center_y + proj_radius * math.sin(angle)
+        px = center_x + proj_radius * math.cos(angle)
+        py = center_y + proj_radius * math.sin(angle)
         proj_positions[p.id] = (px, py)
 
         # Count project stats
@@ -52,33 +52,91 @@ def get_network_graph(db: Session = Depends(get_db)):
             position={"x": round(px, 1), "y": round(py, 1)}
         ))
 
-    # Contributors positions
-    contrib_radius = 180
-    for j, c in enumerate(contributors):
-        # Position contributors in an inner orbit with offset
-        angle = (2 * math.pi / max(len(contributors), 1)) * j - (math.pi / 4)
-        cx = proj_center_x + (contrib_radius * 1.1) * math.cos(angle)
-        cy = proj_center_y + (contrib_radius * 1.1) * math.sin(angle)
+    # Contributors positions (Spacious multi-tier layout guaranteeing zero node overlap)
+    # 1. Identify which contributors are directly connected via vouches or denouncements
+    connected_contrib_map = {}
+    for v in vouches:
+        connected_contrib_map.setdefault(v.contributor_id, []).append(v.source_project_id)
+    for d in denouncements:
+        connected_contrib_map.setdefault(d.contributor_id, []).append(d.reporting_project_id)
 
+    # Position connected contributors clustered near their respective projects
+    placed_contributors = set()
+    project_contrib_counts = {}
+    
+    for c in contributors:
         c_vouches = [v for v in vouches if v.contributor_id == c.id]
         c_denounce = [d for d in denouncements if d.contributor_id == c.id]
+        
+        if c.id in connected_contrib_map:
+            prime_proj_id = connected_contrib_map[c.id][0]
+            if prime_proj_id in proj_positions:
+                ppx, ppy = proj_positions[prime_proj_id]
+                idx = project_contrib_counts.get(prime_proj_id, 0)
+                project_contrib_counts[prime_proj_id] = idx + 1
+                
+                # Offset radially inward/outward with ample clearance
+                orbit_dist = 280 + (idx // 4) * 160
+                sub_angle = (math.pi / 2) * (idx % 4) - (math.pi / 4)
+                cx = ppx + orbit_dist * math.cos(sub_angle)
+                cy = ppy + orbit_dist * math.sin(sub_angle)
+                
+                placed_contributors.add(c.id)
+                nodes.append(GraphNode(
+                    id=c.id,
+                    type="contributorNode",
+                    data={
+                        "id": c.id,
+                        "username": c.username,
+                        "display_name": c.display_name or c.username,
+                        "avatar_url": c.avatar_url,
+                        "github_url": c.github_url,
+                        "reputation_state": c.reputation_state,
+                        "skills": c.skills,
+                        "vouches_count": len(c_vouches),
+                        "denouncements_count": len(c_denounce)
+                    },
+                    position={"x": round(cx, 1), "y": round(cy, 1)}
+                ))
 
-        nodes.append(GraphNode(
-            id=c.id,
-            type="contributorNode",
-            data={
-                "id": c.id,
-                "username": c.username,
-                "display_name": c.display_name or c.username,
-                "avatar_url": c.avatar_url,
-                "github_url": c.github_url,
-                "reputation_state": c.reputation_state,
-                "skills": c.skills,
-                "vouches_count": len(c_vouches),
-                "denouncements_count": len(c_denounce)
-            },
-            position={"x": round(cx, 1), "y": round(cy, 1)}
-        ))
+    # 2. Position remaining contributors in expansive multi-tier outer orbits (with minimum 280px spacing)
+    unplaced = [c for c in contributors if c.id not in placed_contributors]
+    tier_radii = [880, 1200, 1520, 1840]
+    unplaced_idx = 0
+    
+    for tier_r in tier_radii:
+        circumference = 2 * math.pi * tier_r
+        nodes_in_tier = max(1, int(circumference / 320))  # Ensure ~320px arc distance between nodes
+        tier_items = unplaced[unplaced_idx : unplaced_idx + nodes_in_tier]
+        unplaced_idx += len(tier_items)
+        
+        for k, c in enumerate(tier_items):
+            angle = (2 * math.pi / max(len(tier_items), 1)) * k + (tier_r * 0.001)
+            cx = center_x + tier_r * math.cos(angle)
+            cy = center_y + tier_r * math.sin(angle)
+            
+            c_vouches = [v for v in vouches if v.contributor_id == c.id]
+            c_denounce = [d for d in denouncements if d.contributor_id == c.id]
+            
+            nodes.append(GraphNode(
+                id=c.id,
+                type="contributorNode",
+                data={
+                    "id": c.id,
+                    "username": c.username,
+                    "display_name": c.display_name or c.username,
+                    "avatar_url": c.avatar_url,
+                    "github_url": c.github_url,
+                    "reputation_state": c.reputation_state,
+                    "skills": c.skills,
+                    "vouches_count": len(c_vouches),
+                    "denouncements_count": len(c_denounce)
+                },
+                position={"x": round(cx, 1), "y": round(cy, 1)}
+            ))
+            
+        if unplaced_idx >= len(unplaced):
+            break
 
     # Add Project Peer Edges (Federation)
     for pe in edges_raw:

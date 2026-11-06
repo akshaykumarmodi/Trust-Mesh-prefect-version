@@ -34,15 +34,21 @@ export default memo(function ContributorNode({ data, selected }) {
 
   return (
     <div
-      className={`min-w-[190px] rounded-xl p-3 transition-all duration-200 ${
+      className={`contributor-node min-w-[190px] rounded-xl p-3 transition-all duration-200 ${
         selected
           ? `bg-slate-900/95 border-2 ${currentStyle.selectedBorder} scale-105`
-          : `bg-slate-900/80 border ${currentStyle.border} hover:border-slate-500 shadow-md`
+          : `bg-slate-900/85 border ${currentStyle.border} hover:border-slate-500 shadow-md`
       } backdrop-blur-md`}
     >
       <Handle
         type="target"
         position={Position.Top}
+        className="!w-2 !h-2 !bg-slate-400 !border-slate-900"
+      />
+      <Handle
+        type="target"
+        id="c-left"
+        position={Position.Left}
         className="!w-2 !h-2 !bg-slate-400 !border-slate-900"
       />
 
@@ -96,6 +102,12 @@ export default memo(function ContributorNode({ data, selected }) {
       <Handle
         type="source"
         position={Position.Bottom}
+        className="!w-2 !h-2 !bg-slate-400 !border-slate-900"
+      />
+      <Handle
+        type="source"
+        id="c-right"
+        position={Position.Right}
         className="!w-2 !h-2 !bg-slate-400 !border-slate-900"
       />
     </div>

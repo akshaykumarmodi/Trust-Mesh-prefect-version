@@ -29,10 +29,10 @@ export default function ExplodingLoader({ onComplete }) {
     }
   }, [progress]);
 
-  // Smooth loading progress progression
+  // Smooth loading progress progression (Fast & responsive: ~950ms)
   useEffect(() => {
     const startTime = Date.now();
-    const duration = 2200; // 2.2 seconds to 100%
+    const duration = 950; // Fast and snappy loading progression
 
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -43,7 +43,7 @@ export default function ExplodingLoader({ onComplete }) {
         clearInterval(timer);
         triggerExplosion();
       }
-    }, 25);
+    }, 16);
 
     return () => clearInterval(timer);
   }, []);
@@ -57,16 +57,16 @@ export default function ExplodingLoader({ onComplete }) {
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
-      // Create 200+ explosive particle sparks
+      // Create 180 high-velocity explosive particle sparks
       const colors = ['#06b6d4', '#3b82f6', '#10b981', '#a855f7', '#38bdf8', '#f59e0b', '#ffffff'];
       const newParticles = [];
 
-      for (let i = 0; i < 220; i++) {
+      for (let i = 0; i < 180; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 14 + 3;
-        const size = Math.random() * 4.5 + 1.5;
+        const speed = Math.random() * 16 + 5;
+        const size = Math.random() * 4 + 1.5;
         const color = colors[Math.floor(Math.random() * colors.length)];
-        const life = Math.random() * 60 + 40;
+        const life = Math.random() * 35 + 25;
 
         newParticles.push({
           x: cx,
@@ -78,41 +78,41 @@ export default function ExplodingLoader({ onComplete }) {
           alpha: 1,
           life,
           maxLife: life,
-          decay: Math.random() * 0.02 + 0.012,
-          gravity: 0.05,
-          drag: 0.965,
+          decay: Math.random() * 0.035 + 0.02,
+          gravity: 0.04,
+          drag: 0.955,
         });
       }
       particlesRef.current = newParticles;
 
-      // Create expanding shockwave rings
+      // Fast expanding shockwave rings
       shockwavesRef.current = [
-        { radius: 10, maxRadius: Math.max(canvas.width, canvas.height) * 0.8, alpha: 1, color: '#06b6d4', width: 6, speed: 22 },
-        { radius: 5, maxRadius: Math.max(canvas.width, canvas.height) * 0.9, alpha: 0.9, color: '#3b82f6', width: 4, speed: 28 },
-        { radius: 0, maxRadius: Math.max(canvas.width, canvas.height) * 1.1, alpha: 0.8, color: '#a855f7', width: 2, speed: 34 }
+        { radius: 10, maxRadius: Math.max(canvas.width, canvas.height) * 0.9, alpha: 1, color: '#06b6d4', width: 6, speed: 36 },
+        { radius: 5, maxRadius: Math.max(canvas.width, canvas.height) * 1.0, alpha: 0.9, color: '#3b82f6', width: 4, speed: 44 },
+        { radius: 0, maxRadius: Math.max(canvas.width, canvas.height) * 1.2, alpha: 0.8, color: '#a855f7', width: 3, speed: 52 }
       ];
     }
 
     // Secondary festive confetti blast
     try {
       confetti({
-        particleCount: 80,
-        spread: 100,
+        particleCount: 70,
+        spread: 110,
         origin: { y: 0.5, x: 0.5 },
         colors: ['#06b6d4', '#3b82f6', '#10b981', '#a855f7'],
-        disableForReducedMotion: true,
+        disableForReducedMotion: false,
       });
     } catch {
       // safe fallback
     }
 
-    // Schedule smooth transition into website
+    // Schedule smooth, synchronized transition into website
     setTimeout(() => {
       setIsFadingOut(true);
       setTimeout(() => {
         if (onComplete) onComplete();
-      }, 550);
-    }, 700);
+      }, 240);
+    }, 320);
   };
 
   // Canvas particle and background mesh physics loop
@@ -182,50 +182,52 @@ export default function ExplodingLoader({ onComplete }) {
         }
       }
 
-      // 2. Render expanding shockwave rings
+      // 2. Render expanding shockwave rings (using lighter composite for fast GPU blend)
       const shockwaves = shockwavesRef.current;
-      for (let i = shockwaves.length - 1; i >= 0; i--) {
-        const sw = shockwaves[i];
-        sw.radius += sw.speed;
-        sw.alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
+      if (shockwaves.length > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = shockwaves.length - 1; i >= 0; i--) {
+          const sw = shockwaves[i];
+          sw.radius += sw.speed;
+          sw.alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
 
-        if (sw.alpha > 0) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(canvas.width / 2, canvas.height / 2, sw.radius, 0, Math.PI * 2);
-          ctx.strokeStyle = sw.color;
-          ctx.lineWidth = sw.width * sw.alpha;
-          ctx.shadowBlur = 25;
-          ctx.shadowColor = sw.color;
-          ctx.globalAlpha = sw.alpha;
-          ctx.stroke();
-          ctx.restore();
+          if (sw.alpha > 0) {
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, sw.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = sw.color;
+            ctx.lineWidth = sw.width * sw.alpha;
+            ctx.globalAlpha = sw.alpha;
+            ctx.stroke();
+          }
         }
+        ctx.restore();
       }
 
-      // 3. Render exploding particles
+      // 3. Render exploding particles (fast 60/120fps GPU blend without CPU blur lag)
       const particles = particlesRef.current;
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= p.drag;
-        p.vy = p.vy * p.drag + p.gravity;
-        p.alpha -= p.decay;
+      if (particles.length > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= p.drag;
+          p.vy = p.vy * p.drag + p.gravity;
+          p.alpha -= p.decay;
 
-        if (p.alpha > 0) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, Math.max(0.5, p.size * p.alpha), 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = p.color;
-          ctx.globalAlpha = Math.max(0, p.alpha);
-          ctx.fill();
-          ctx.restore();
-        } else {
-          particles.splice(i, 1);
+          if (p.alpha > 0) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, Math.max(0.5, p.size * p.alpha), 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fill();
+          } else {
+            particles.splice(i, 1);
+          }
         }
+        ctx.restore();
       }
 
       animationFrameRef.current = requestAnimationFrame(render);
@@ -277,8 +279,8 @@ export default function ExplodingLoader({ onComplete }) {
       <div className="relative flex flex-col items-center justify-center z-10">
         {/* Core Moving & Pulsing Body */}
         <div
-          className={`relative flex items-center justify-center transition-transform duration-300 ${
-            isExploding ? 'scale-150 opacity-0 duration-500' : 'animate-bounce-subtle'
+          className={`relative flex items-center justify-center transition-all duration-300 ${
+            isExploding ? 'scale-125 opacity-0 pointer-events-none' : 'animate-bounce-subtle'
           }`}
         >
           {/* Outer rotating cyber ring */}
@@ -297,7 +299,7 @@ export default function ExplodingLoader({ onComplete }) {
 
           {/* Exploding flash burst aura */}
           {isExploding && (
-            <div className="absolute inset-0 rounded-full bg-white shadow-[0_0_120px_#06b6d4] animate-ping" />
+            <div className="absolute -inset-10 rounded-full bg-cyan-400/40 shadow-[0_0_120px_#06b6d4] animate-ping" />
           )}
         </div>
 

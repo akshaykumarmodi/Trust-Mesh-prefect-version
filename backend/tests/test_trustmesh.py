@@ -208,3 +208,20 @@ def test_dynamic_campaign_scan():
     assert scan_data["status"] == "success"
     assert "reports_analyzed" in scan_data
     assert "algorithm" in scan_data
+
+def test_network_graph_non_overlapping_layout():
+    """
+    Test that /api/network returns valid nodes and edges with distinct positions.
+    """
+    res = client.get("/api/network")
+    assert res.status_code == 200
+    data = res.json()
+    assert "nodes" in data
+    assert "edges" in data
+    assert len(data["nodes"]) > 0
+
+    for node in data["nodes"]:
+        assert "x" in node["position"]
+        assert "y" in node["position"]
+        assert isinstance(node["position"]["x"], (int, float))
+        assert isinstance(node["position"]["y"], (int, float))

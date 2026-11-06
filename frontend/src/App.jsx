@@ -14,6 +14,7 @@ import AdminActivityView from './pages/AdminActivityView';
 import AuthModal from './components/AuthModal';
 import ExplodingLoader from './components/ExplodingLoader';
 import SelfOwnedMailboxModal from './components/SelfOwnedMailboxModal';
+import PullRopeToggle from './components/PullRopeToggle';
 import { api } from './services/api';
 
 const VALID_VIEWS = [
@@ -72,6 +73,32 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mailboxOpen, setMailboxOpen] = useState(false);
+
+  // Dark & Light Theme State (Persisted in localStorage)
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('trustmesh_theme') || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    }
+    try {
+      localStorage.setItem('trustmesh_theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   useEffect(() => {
     // Synchronize browser history / hash change events
@@ -154,12 +181,18 @@ export default function App() {
 
   // If on Landing Page
   if (currentView === 'landing') {
-    return <LandingPage onEnterApp={(target) => handleNavigate(target || 'overview')} />;
+    return (
+      <>
+        <PullRopeToggle theme={theme} onToggleTheme={handleToggleTheme} />
+        <LandingPage onEnterApp={(target) => handleNavigate(target || 'overview')} />
+      </>
+    );
   }
 
   // Dashboard Views
   return (
     <>
+      <PullRopeToggle theme={theme} onToggleTheme={handleToggleTheme} />
       <DashboardLayout
         currentView={currentView}
         onNavigate={handleNavigate}
@@ -169,6 +202,7 @@ export default function App() {
         onOpenAuth={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onOpenMailbox={() => setMailboxOpen(true)}
+        theme={theme}
       >
         {currentView === 'overview' && <OverviewView onNavigate={handleNavigate} />}
         {currentView === 'network' && (
