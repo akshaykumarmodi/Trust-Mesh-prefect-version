@@ -38,7 +38,7 @@ export default function LandingPage({ onEnterApp }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 pr-10 sm:pr-14">
+          <div className="flex items-center gap-4 pr-14 sm:pr-18">
             <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
               <span className="font-mono text-cyan-300">TRUST NETWORK INITIALIZED</span>

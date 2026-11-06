@@ -132,6 +132,132 @@
 }
 
 /* ==========================================================================
+   DARK MODE EXPLICIT RULES & SELECT/OPTION CONTRAST
+   ========================================================================== */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body,
+body {
+  background-color: #05070a;
+  color: #f1f5f9;
+}
+
+/* Ensure macOS Safari and Chrome native select/option render with dark theme */
+html.dark select,
+select {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  color-scheme: dark;
+}
+
+html.dark select option,
+select option {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .admin-card {
+  background-color: rgba(9, 14, 26, 0.85);
+  border-color: rgba(30, 41, 59, 0.8);
+  color: #f1f5f9;
+  box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .admin-subcard {
+  background-color: rgba(15, 23, 42, 0.85);
+  border-color: rgba(30, 41, 59, 0.8);
+  color: #f1f5f9;
+}
+
+html.dark .admin-banner {
+  background: linear-gradient(135deg, #0c1322 0%, #080d18 50%, #04070d 100%);
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+html.dark .admin-threat-banner {
+  background-color: rgba(76, 5, 25, 0.25);
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+html.dark .admin-table-head {
+  background-color: rgba(2, 6, 23, 0.7);
+  color: #94a3b8;
+  border-color: rgba(30, 41, 59, 0.8);
+}
+
+html.dark .admin-table-row {
+  border-color: rgba(30, 41, 59, 0.5);
+}
+
+html.dark .admin-table-row:hover {
+  background-color: rgba(30, 41, 59, 0.35);
+}
+
+html.dark .admin-table-drawer {
+  background-color: rgba(2, 6, 23, 0.85);
+  border-color: rgba(30, 41, 59, 0.8);
+}
+
+html.dark .admin-input,
+html.dark .admin-select {
+  background-color: rgba(15, 23, 42, 0.9);
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html.dark .admin-input::placeholder {
+  color: #64748b;
+}
+
+html.dark .admin-pre {
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #34d399;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html.dark .admin-title {
+  color: #ffffff;
+}
+
+html.dark .admin-muted {
+  color: #94a3b8;
+}
+
+html.dark .admin-desc {
+  color: #cbd5e1;
+}
+
+html.dark .admin-border-t,
+html.dark .admin-border-b {
+  border-color: rgba(30, 41, 59, 0.8);
+}
+
+html.dark .admin-icon-box {
+  background-color: #0f172a;
+  border-color: #1e293b;
+}
+
+html.dark .admin-lock-card {
+  background-color: #0a0f1d;
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 50px rgba(6, 182, 212, 0.15);
+}
+
+html.dark .admin-button-alt {
+  background-color: #0f172a;
+  border-color: #1e293b;
+  color: #cbd5e1;
+}
+
+html.dark .admin-button-alt:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+/* ==========================================================================
    LIGHT MODE PALETTE & THEME OVERRIDES (Full contrast, flawless text legibility)
    ========================================================================== */
 html.light {
@@ -192,7 +318,12 @@ html.light header {
 /* Surface backgrounds */
 html.light .bg-\[\#05070a\],
 html.light .bg-\[\#090d16\],
-html.light .bg-\[\#030712\] {
+html.light .bg-\[\#030712\],
+html.light .bg-\[\#0a0f1d\],
+html.light .bg-\[\#070b14\],
+html.light .bg-\[\#090f1d\],
+html.light .bg-\[\#090e1a\]\/80,
+html.light .bg-\[\#090e1a\]\/90 {
   background-color: #f8fafc !important;
 }
 
@@ -256,11 +387,151 @@ html.light textarea {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+  color-scheme: light;
+}
+
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 html.light input::placeholder,
 html.light textarea::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Admin Activity Monitoring Light Mode Specific Overrides */
+html.light .admin-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .admin-subcard {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .admin-banner {
+  background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 50%, #f1f5f9 100%) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 30px -4px rgba(6, 182, 212, 0.12) !important;
+}
+
+html.light .admin-threat-banner {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #9f1239 !important;
+}
+
+html.light .admin-threat-banner span,
+html.light .admin-threat-banner p {
+  color: #881337 !important;
+}
+
+html.light .admin-table-head {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .admin-table-body {
+  border-color: #f1f5f9 !important;
+}
+
+html.light .admin-table-row {
+  border-color: #f1f5f9 !important;
+}
+
+html.light .admin-table-row:hover {
+  background-color: #f8fafc !important;
+}
+
+html.light .admin-table-drawer {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .admin-input,
+html.light .admin-select {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light .admin-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light .admin-pre {
+  background-color: #0f172a !important;
+  color: #34d399 !important;
+  border: 1px solid #1e293b !important;
+}
+
+html.light .admin-title {
+  color: #0f172a !important;
+}
+
+html.light .admin-muted {
+  color: #64748b !important;
+}
+
+html.light .admin-desc {
+  color: #334155 !important;
+}
+
+html.light .admin-border-t,
+html.light .admin-border-b {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .admin-icon-box {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .admin-lock-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1) !important;
+}
+
+html.light .admin-button-alt {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html.light .admin-button-alt:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .admin-tab:not(.active) {
+  color: #64748b !important;
+}
+
+html.light .admin-tab:not(.active):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light .admin-pill:not(.active) {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+html.light .admin-pill:not(.active):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light .admin-user-title {
+  color: #0f172a !important;
 }
 
 /* React Flow in Light Mode */

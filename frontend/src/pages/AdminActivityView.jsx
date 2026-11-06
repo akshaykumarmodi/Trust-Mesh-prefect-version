@@ -38,7 +38,7 @@ const CATEGORIES = [
   { id: 'SECURITY', label: 'Security Alerts', icon: AlertTriangle, highlight: true },
 ];
 
-export default function AdminActivityView({ onOpenAuth, currentUser }) {
+export default function AdminActivityView({ onOpenAuth, currentUser, theme }) {
   const [metrics, setMetrics] = useState(null);
   const [activities, setActivities] = useState([]);
   const [emailDeliveries, setEmailDeliveries] = useState([]);
@@ -264,19 +264,19 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
   if (!isAuthorized) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#0a0f1d] border border-cyan-500/30 rounded-2xl p-8 text-center shadow-[0_0_50px_rgba(6,182,212,0.15)]">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400 mb-5">
+        <div className="admin-lock-card max-w-md w-full bg-[#0a0f1d] border border-cyan-500/30 rounded-2xl p-8 text-center shadow-[0_0_50px_rgba(6,182,212,0.15)]">
+          <div className="admin-icon-box w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400 mb-5">
             <Lock className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold font-display text-white mb-2">
+          <h2 className="admin-title text-xl font-bold font-display text-white mb-2">
             Restricted Admin Area
           </h2>
-          <p className="text-xs text-slate-400 leading-relaxed mb-6">
+          <p className="admin-muted text-xs text-slate-400 leading-relaxed mb-6">
             The TrustMesh Activity Monitoring and Email Notification Audit Trail is restricted to authorized administrators. Access is verified server-side via signed admin tokens or master keys.
           </p>
-          <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl text-[11px] font-mono text-cyan-300 text-left mb-6">
-            <div className="text-slate-400 text-[10px] uppercase tracking-wider mb-1">Configured Admin Target</div>
-            <div>{metrics?.admin_email || 'Configured Administrator'}</div>
+          <div className="admin-subcard p-3 bg-slate-900/80 border border-slate-800 rounded-xl text-[11px] font-mono text-cyan-300 text-left mb-6">
+            <div className="admin-muted text-slate-400 text-[10px] uppercase tracking-wider mb-1">Configured Admin Target</div>
+            <div className="font-semibold text-cyan-400">{metrics?.admin_email || 'Configured Administrator'}</div>
           </div>
           <div className="space-y-2.5">
             <button
@@ -289,7 +289,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
             </button>
             <button
               onClick={onOpenAuth}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 font-medium rounded-xl text-xs transition-all"
+              className="admin-button-alt w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 font-medium rounded-xl text-xs transition-all"
             >
               Sign In with Custom Account
             </button>
@@ -302,37 +302,37 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
   return (
     <div className="space-y-6">
       {/* Top Banner & Notification Target Card */}
-      <div className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-[#0c1322] via-[#080d18] to-[#04070d] p-6 lg:p-7 shadow-[0_0_40px_rgba(6,182,212,0.1)]">
+      <div className="admin-banner relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-[#0c1322] via-[#080d18] to-[#04070d] p-6 lg:p-7 shadow-[0_0_40px_rgba(6,182,212,0.1)]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                 PROD-SEC-MONITOR
               </span>
-              <span className="text-xs text-slate-400 font-mono">FastAPI + Automated Database Dispatch Engine</span>
+              <span className="admin-muted text-xs text-slate-400 font-mono">FastAPI + Automated Database Dispatch Engine</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
+            <h1 className="admin-title text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
               Admin Activity Monitoring & Notification System
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
+            <p className="admin-muted text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
               Real-time server-side tracking of user registrations, logins, OAuth authentications, GitHub repository imports, and trust network consensus. All alerts dispatched automatically by our database engine with zero external dependencies.
             </p>
           </div>
 
           {/* Admin Email Target Badge & Action */}
-          <div className="bg-slate-950/70 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 shrink-0 lg:w-80">
+          <div className="admin-subcard bg-slate-950/70 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3 shrink-0 lg:w-80">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+              <span className="admin-muted text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-cyan-400" />
                 Notification Recipient
               </span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </div>
-            <div className="text-sm font-bold text-cyan-300 font-mono truncate">
+            <div className="text-sm font-bold text-cyan-400 font-mono truncate">
               {metrics?.admin_email || 'Configured Administrator'}
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-              <span>Delivery Engine:</span>
+            <div className="admin-border-t flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+              <span className="admin-muted">Delivery Engine:</span>
               <span className="font-mono font-medium text-emerald-400 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3 text-emerald-400" />
                 Database Automated
@@ -371,18 +371,18 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
               <div>
                 <span className="font-semibold">{testEmailResult.message}</span>
                 {testEmailResult.status && (
-                  <span className="ml-2 font-mono text-[10px] bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
+                  <span className="admin-subcard ml-2 font-mono text-[10px] bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
                     Status: {testEmailResult.status} {testEmailResult.resend_id ? `(ID: ${testEmailResult.resend_id})` : ''}
                   </span>
                 )}
-                <div className="text-[11px] text-slate-400 mt-0.5">
+                <div className="admin-muted text-[11px] text-slate-400 mt-0.5">
                   Target Recipient: {testEmailResult.recipient || metrics?.admin_email || 'Administrator'}
                 </div>
               </div>
             </div>
             <button
               onClick={() => setTestEmailResult(null)}
-              className="text-slate-400 hover:text-white text-xs"
+              className="admin-muted text-slate-400 hover:text-white text-xs"
             >
               ✕
             </button>
@@ -392,12 +392,12 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
 
       {/* KPI Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-4.5">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+        <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-5">
+          <div className="admin-muted flex items-center justify-between text-slate-400 text-xs font-mono">
             <span>TOTAL ACTIVITIES</span>
             <Activity className="w-4 h-4 text-cyan-400" />
           </div>
-          <div className="text-2xl font-bold font-display text-white mt-2">
+          <div className="admin-title text-2xl font-bold font-display text-white mt-2">
             {metrics?.total_activities ?? '—'}
           </div>
           <div className="text-[10px] text-cyan-400 mt-1 font-mono">
@@ -405,25 +405,25 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
           </div>
         </div>
 
-        <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-4.5">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+        <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-5">
+          <div className="admin-muted flex items-center justify-between text-slate-400 text-xs font-mono">
             <span>SECURITY ALERTS</span>
             <ShieldAlert className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-2xl font-bold font-display text-rose-400 mt-2">
             {metrics?.total_security_alerts ?? metrics?.security_alerts ?? '0'}
           </div>
-          <div className="text-[10px] text-slate-400 mt-1">
+          <div className="admin-muted text-[10px] text-slate-400 mt-1">
             Failed logins & brute-force detection
           </div>
         </div>
 
-        <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-4.5">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+        <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-5">
+          <div className="admin-muted flex items-center justify-between text-slate-400 text-xs font-mono">
             <span>REGISTERED USERS</span>
             <UserCheck className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-display text-white mt-2">
+          <div className="admin-title text-2xl font-bold font-display text-white mt-2">
             {metrics?.total_users ?? '—'}
           </div>
           <div className="text-[10px] text-emerald-400 mt-1 font-mono">
@@ -431,12 +431,12 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
           </div>
         </div>
 
-        <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-4.5">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
+        <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-5">
+          <div className="admin-muted flex items-center justify-between text-slate-400 text-xs font-mono">
             <span>EMAILS DISPATCHED</span>
             <Mail className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-bold font-display text-white mt-2">
+          <div className="admin-title text-2xl font-bold font-display text-white mt-2">
             {metrics ? ((metrics.emails_sent || 0) + (metrics.emails_simulated || 0) + (metrics.emails_rate_limited || 0) + (metrics.emails_failed || 0)) : emailDeliveries.length}
           </div>
           <div className="text-[10px] text-purple-400 mt-1 font-mono">
@@ -446,13 +446,13 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3 gap-2 overflow-x-auto">
+      <div className="admin-border-b flex items-center justify-between border-b border-slate-800 pb-3 gap-2 overflow-x-auto">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('stream')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+            className={`admin-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
               activeTab === 'stream'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.15)] active'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
             }`}
           >
@@ -462,9 +462,9 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
 
           <button
             onClick={() => setActiveTab('security')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+            className={`admin-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
               activeTab === 'security'
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.15)]'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.15)] active'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
             }`}
           >
@@ -474,9 +474,9 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
 
           <button
             onClick={() => setActiveTab('emails')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+            className={`admin-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
               activeTab === 'emails'
-                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.15)]'
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.15)] active'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
             }`}
           >
@@ -486,9 +486,9 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
 
           <button
             onClick={() => setActiveTab('privacy')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+            className={`admin-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
               activeTab === 'privacy'
-                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 active'
                 : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
             }`}
           >
@@ -500,7 +500,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
         <button
           onClick={fetchAdminData}
           disabled={refreshing}
-          className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0"
+          className="admin-button-alt p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all shrink-0"
           title="Refresh activity logs"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-cyan-400' : ''}`} />
@@ -518,9 +518,9 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                  className={`admin-pill px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                     selectedCategory === cat.id
-                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm active'
                       : 'bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800'
                   }`}
                 >
@@ -538,25 +538,25 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search user, event, repo..."
-                  className="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  className="admin-input w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-400"
+                className="admin-select bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-400"
               >
-                <option value="ALL">All Statuses</option>
-                <option value="SUCCESS">Success Only</option>
-                <option value="FAILED">Failed</option>
-                <option value="SUSPICIOUS">Suspicious</option>
+                <option value="ALL" className="bg-slate-900 text-slate-200">All Statuses</option>
+                <option value="SUCCESS" className="bg-slate-900 text-slate-200">Success Only</option>
+                <option value="FAILED" className="bg-slate-900 text-slate-200">Failed</option>
+                <option value="SUSPICIOUS" className="bg-slate-900 text-slate-200">Suspicious</option>
               </select>
             </div>
           </div>
 
           {/* Activity Logs Table */}
-          <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-lg">
+          <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-lg">
             {loading ? (
               <div className="p-12 text-center text-slate-500 text-xs font-mono flex items-center justify-center gap-2">
                 <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
@@ -570,7 +570,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-slate-800/80 bg-slate-950/60 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    <tr className="admin-table-head border-b border-slate-800/80 bg-slate-950/60 text-[10px] font-mono uppercase tracking-wider text-slate-400">
                       <th className="py-3 px-4">Event Type</th>
                       <th className="py-3 px-4">User Identity</th>
                       <th className="py-3 px-4">Description</th>
@@ -580,22 +580,22 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                       <th className="py-3 px-4 text-right">Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/50">
+                  <tbody className="admin-table-body divide-y divide-slate-800/50">
                     {activities.map((log) => {
                       const isExpanded = expandedLogId === log.id;
                       return (
                         <React.Fragment key={log.id}>
-                          <tr className="hover:bg-slate-800/20 transition-colors">
+                          <tr className="admin-table-row hover:bg-slate-800/20 transition-colors">
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
-                                <span className="p-1.5 rounded-lg bg-slate-900 border border-slate-800">
+                                <span className="admin-icon-box p-1.5 rounded-lg bg-slate-900 border border-slate-800">
                                   {getEventIcon(log.event_type)}
                                 </span>
                                 <div>
                                   <span className="font-mono font-medium text-cyan-300">
                                     {log.event_type}
                                   </span>
-                                  <div className="text-[10px] text-slate-500 font-mono">
+                                  <div className="admin-muted text-[10px] text-slate-500 font-mono">
                                     {log.id}
                                   </div>
                                 </div>
@@ -605,9 +605,9 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                             <td className="py-3 px-4">
                               {log.user_email ? (
                                 <div>
-                                  <div className="text-white font-medium">{log.user_email}</div>
+                                  <div className="admin-user-title text-white font-medium">{log.user_email}</div>
                                   {log.user_name && (
-                                    <div className="text-[10px] text-slate-400">{log.user_name}</div>
+                                    <div className="admin-muted text-[10px] text-slate-400">{log.user_name}</div>
                                   )}
                                   {log.github_username && (
                                     <div className="text-[10px] text-purple-400 font-mono">
@@ -620,11 +620,11 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                                   @{log.github_username}
                                 </div>
                               ) : (
-                                <span className="text-slate-500 font-mono">System / Anonymous</span>
+                                <span className="admin-muted text-slate-500 font-mono">System / Anonymous</span>
                               )}
                             </td>
 
-                            <td className="py-3 px-4 max-w-xs truncate text-slate-300" title={log.event_description}>
+                            <td className="admin-desc py-3 px-4 max-w-xs truncate text-slate-300" title={log.event_description}>
                               {log.event_description}
                             </td>
 
@@ -638,7 +638,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                                   {log.resource_type}: {log.resource_id}
                                 </span>
                               ) : (
-                                <span className="text-slate-600">—</span>
+                                <span className="admin-muted text-slate-600">—</span>
                               )}
                             </td>
 
@@ -646,14 +646,14 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                               {getStatusBadge(log.status)}
                             </td>
 
-                            <td className="py-3 px-4 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                            <td className="admin-muted py-3 px-4 font-mono text-[11px] text-slate-400 whitespace-nowrap">
                               {formatUtcTime(log.timestamp)}
                             </td>
 
                             <td className="py-3 px-4 text-right">
                               <button
                                 onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
+                                className="admin-button-alt p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
                                 title="Inspect sanitized metadata"
                               >
                                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -663,18 +663,18 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
 
                           {/* Expanded metadata drawer */}
                           {isExpanded && (
-                            <tr className="bg-slate-950/80 border-b border-slate-800/80">
+                            <tr className="admin-table-drawer bg-slate-950/80 border-b border-slate-800/80">
                               <td colSpan={7} className="p-4">
-                                <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-3">
-                                  <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+                                <div className="admin-subcard rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-3">
+                                  <div className="admin-border-b flex items-center justify-between text-xs border-b border-slate-800 pb-2">
                                     <span className="font-mono text-cyan-400">
                                       Sanitized Metadata Payload (No credentials or secrets)
                                     </span>
-                                    <span className="text-slate-400 font-mono text-[10px]">
+                                    <span className="admin-muted text-slate-400 font-mono text-[10px]">
                                       Activity ID: {log.id}
                                     </span>
                                   </div>
-                                  <pre className="p-3 bg-black/60 rounded-lg text-[11px] font-mono text-emerald-300 overflow-x-auto">
+                                  <pre className="admin-pre p-3 bg-black/60 rounded-lg text-[11px] font-mono text-emerald-300 overflow-x-auto">
                                     {JSON.stringify(log.metadata || {}, null, 2)}
                                   </pre>
                                 </div>
@@ -695,31 +695,31 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
       {/* TAB 2: SECURITY ALERTS & THREAT RADAR */}
       {activeTab === 'security' && (
         <div className="space-y-4">
-          <div className="bg-rose-950/20 border border-rose-500/30 rounded-2xl p-6 space-y-3">
+          <div className="admin-threat-banner bg-rose-950/20 border border-rose-500/30 rounded-2xl p-6 space-y-3">
             <div className="flex items-center gap-2 text-rose-400 font-semibold text-sm">
               <ShieldAlert className="w-5 h-5" />
               <span>Real-time Security Threat Radar & Anomaly Detection</span>
             </div>
-            <p className="text-xs text-slate-400 max-w-3xl leading-relaxed">
-              Monitors suspicious login spikes, brute-force attempts against registered accounts, invalid OAuth callbacks, and repeated token tampering. Accounts experiencing ≥3 consecutive failed authentications trigger immediate high-priority admin alert emails to <span className="text-rose-300 font-mono">{metrics?.admin_email || 'the authorized administrator'}</span>.
+            <p className="admin-muted text-xs text-slate-400 max-w-3xl leading-relaxed">
+              Monitors suspicious login spikes, brute-force attempts against registered accounts, invalid OAuth callbacks, and repeated token tampering. Accounts experiencing ≥3 consecutive failed authentications trigger immediate high-priority admin alert emails to <span className="text-rose-400 font-mono font-semibold">{metrics?.admin_email || 'the authorized administrator'}</span>.
             </p>
           </div>
 
-          <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-slate-800 text-xs font-semibold text-white">
+          <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden">
+            <div className="admin-border-b admin-title p-4 border-b border-slate-800 text-xs font-semibold text-white">
               Security Incidents & Flagged Operations
             </div>
             {activities.filter((a) => a.status === 'SUSPICIOUS' || a.status === 'FAILED' || a.event_type.includes('SECURITY')).length === 0 ? (
-              <div className="p-12 text-center text-slate-500 text-xs">
+              <div className="admin-muted p-12 text-center text-slate-500 text-xs">
                 <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
                 All authentication and cryptographic operations nominal. No active security flags.
               </div>
             ) : (
-              <div className="divide-y divide-slate-800/60">
+              <div className="admin-table-body divide-y divide-slate-800/60">
                 {activities
                   .filter((a) => a.status === 'SUSPICIOUS' || a.status === 'FAILED' || a.event_type.includes('SECURITY'))
                   .map((alert) => (
-                    <div key={alert.id} className="p-4 flex items-start justify-between gap-4">
+                    <div key={alert.id} className="admin-table-row p-4 flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 shrink-0">
                           <AlertTriangle className="w-4 h-4" />
@@ -731,8 +731,8 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                             </span>
                             {getStatusBadge(alert.status)}
                           </div>
-                          <p className="text-xs text-white mt-1">{alert.event_description}</p>
-                          <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-2 font-mono">
+                          <p className="admin-title text-xs text-white mt-1">{alert.event_description}</p>
+                          <div className="admin-muted flex items-center gap-3 text-[11px] text-slate-400 mt-2 font-mono">
                             <span>User: {alert.user_email || alert.github_username || 'Anonymous'}</span>
                             <span>•</span>
                             <span>{formatUtcTime(alert.timestamp)}</span>
@@ -753,7 +753,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
       {activeTab === 'emails' && (
         <div className="space-y-4">
           {/* GMAIL SMTP STATUS & CONFIGURATION CARD */}
-          <div className="bg-[#090e1a]/90 border border-slate-800/80 rounded-2xl p-5 shadow-lg space-y-4">
+          <div className="admin-card bg-[#090e1a]/90 border border-slate-800/80 rounded-2xl p-5 shadow-lg space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl ${smtpStatus?.configured ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
@@ -761,7 +761,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-white">Gmail SMTP & Nodemailer Engine</h3>
+                    <h3 className="admin-title text-sm font-semibold text-white">Gmail SMTP & Nodemailer Engine</h3>
                     {smtpStatus?.configured ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                         <CheckCircle className="w-3 h-3 text-emerald-400" /> ACTIVE
@@ -772,7 +772,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="admin-muted text-xs text-slate-400 mt-0.5">
                     {smtpStatus?.configured
                       ? `Connected as ${smtpStatus.gmail_user} ➔ Dispatches live login alerts to ${smtpStatus.admin_email}`
                       : `Live email delivery to ${smtpStatus?.admin_email || metrics?.admin_email || 'the administrator'} requires your Gmail App Password`}
@@ -783,7 +783,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowSmtpForm(!showSmtpForm)}
-                  className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  className="admin-button-alt py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
                 >
                   <Key className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{showSmtpForm ? 'Close Setup' : (smtpStatus?.configured ? 'Update Credentials' : 'Configure Gmail SMTP')}</span>
@@ -807,7 +807,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                   {testEmailResult.success ? <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <XCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />}
                   <span>{testEmailResult.message}</span>
                 </div>
-                <button onClick={() => setTestEmailResult(null)} className="text-slate-400 hover:text-white">&times;</button>
+                <button onClick={() => setTestEmailResult(null)} className="admin-muted text-slate-400 hover:text-white">&times;</button>
               </div>
             )}
 
@@ -818,13 +818,13 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                   {smtpFeedback.success ? <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <XCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />}
                   <span>{smtpFeedback.message}</span>
                 </div>
-                <button onClick={() => setSmtpFeedback(null)} className="text-slate-400 hover:text-white">&times;</button>
+                <button onClick={() => setSmtpFeedback(null)} className="admin-muted text-slate-400 hover:text-white">&times;</button>
               </div>
             )}
 
             {/* QUICK CONFIG FORM */}
             {showSmtpForm && (
-              <form onSubmit={handleSaveSmtp} className="p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 space-y-3 mt-3 animate-fadeIn">
+              <form onSubmit={handleSaveSmtp} className="admin-subcard p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 space-y-3 mt-3 animate-fadeIn">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider font-mono">
                     Gmail SMTP & App Password Setup
@@ -842,7 +842,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-mono text-slate-300 mb-1">
+                    <label className="admin-muted block text-[11px] font-mono text-slate-300 mb-1">
                       Sender Gmail Account (GMAIL_USER)
                     </label>
                     <input
@@ -851,12 +851,12 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                       placeholder="your_email@gmail.com"
                       value={smtpFormUser}
                       onChange={(e) => setSmtpFormUser(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                      className="admin-input w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono text-slate-300 mb-1">
+                    <label className="admin-muted block text-[11px] font-mono text-slate-300 mb-1">
                       16-Character App Password
                     </label>
                     <input
@@ -865,12 +865,12 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                       placeholder="abcd efgh ijkl mnop"
                       value={smtpFormPassword}
                       onChange={(e) => setSmtpFormPassword(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      className="admin-input w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono text-slate-300 mb-1">
+                    <label className="admin-muted block text-[11px] font-mono text-slate-300 mb-1">
                       Target Admin Email (ADMIN_EMAIL)
                     </label>
                     <input
@@ -879,13 +879,13 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                       placeholder={metrics?.admin_email || "admin@example.com"}
                       value={smtpFormAdmin}
                       onChange={(e) => setSmtpFormAdmin(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                      className="admin-input w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-[10px] text-slate-400">
+                  <p className="admin-muted text-[10px] text-slate-400">
                     Credentials are saved directly to your local <code className="text-cyan-400 font-mono">.env</code> and activated immediately with zero third-party mediator quotas.
                   </p>
                   <button
@@ -901,16 +901,16 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
             )}
           </div>
 
-          <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-lg">
+          <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-lg">
             {emailDeliveries.length === 0 ? (
-              <div className="p-12 text-center text-slate-500 text-xs">
+              <div className="admin-muted p-12 text-center text-slate-500 text-xs">
                 No notifications available.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-slate-800/80 bg-slate-950/60 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    <tr className="admin-table-head border-b border-slate-800/80 bg-slate-950/60 text-[10px] font-mono uppercase tracking-wider text-slate-400">
                       <th className="py-3 px-4">Dispatched At (UTC)</th>
                       <th className="py-3 px-4">Recipient</th>
                       <th className="py-3 px-4">Subject</th>
@@ -919,16 +919,16 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                       <th className="py-3 px-4">Attempts</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/50">
+                  <tbody className="admin-table-body divide-y divide-slate-800/50">
                     {emailDeliveries.map((email) => (
-                      <tr key={email.id} className="hover:bg-slate-800/20 transition-colors">
-                        <td className="py-3 px-4 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                      <tr key={email.id} className="admin-table-row hover:bg-slate-800/20 transition-colors">
+                        <td className="admin-muted py-3 px-4 font-mono text-[11px] text-slate-400 whitespace-nowrap">
                           {formatUtcTime(email.sent_at || email.created_at)}
                         </td>
-                        <td className="py-3 px-4 font-mono text-cyan-300">
+                        <td className="py-3 px-4 font-mono text-cyan-400">
                           {email.recipient}
                         </td>
-                        <td className="py-3 px-4 text-white font-medium max-w-sm truncate" title={email.subject}>
+                        <td className="admin-title py-3 px-4 text-white font-medium max-w-sm truncate" title={email.subject}>
                           {email.subject}
                           {email.error_message && (
                             <span className="block text-[10px] text-amber-400 truncate mt-0.5" title={email.error_message}>
@@ -939,7 +939,7 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                         <td className="py-3 px-4">
                           {getStatusBadge(email.status)}
                         </td>
-                        <td className="py-3 px-4 font-mono text-[10px] text-slate-400">
+                        <td className="admin-muted py-3 px-4 font-mono text-[10px] text-slate-400">
                           {email.resend_id ? (
                             <div>
                               <span className="text-emerald-400 font-semibold">{email.resend_id}</span>
@@ -952,10 +952,10 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-slate-600">Internal Audit Delivery</span>
+                            <span className="admin-muted text-slate-600">Internal Audit Delivery</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 font-mono text-[11px] text-slate-400">
+                        <td className="admin-muted py-3 px-4 font-mono text-[11px] text-slate-400">
                           {email.attempt_count}
                         </td>
                       </tr>
@@ -971,59 +971,59 @@ export default function AdminActivityView({ onOpenAuth, currentUser }) {
       {/* TAB 4: PRIVACY & COMPLIANCE */}
       {activeTab === 'privacy' && (
         <div className="space-y-4">
-          <div className="bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-6 space-y-4 text-xs text-slate-300">
+          <div className="admin-card bg-[#090e1a]/80 border border-slate-800/80 rounded-2xl p-6 space-y-4 text-xs text-slate-300">
             <div className="flex items-center gap-2.5 text-cyan-400 font-semibold text-sm">
               <Shield className="w-5 h-5" />
               <span>TrustMesh Privacy & Activity Monitoring Architecture</span>
             </div>
 
-            <p className="leading-relaxed">
+            <p className="admin-desc leading-relaxed">
               TrustMesh operates an enterprise-grade trust network requiring absolute transparency and cryptographic non-repudiation. Activity monitoring is explicitly governed by the following core privacy safeguards:
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <div className="font-semibold text-white flex items-center gap-2">
+              <div className="admin-subcard p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="admin-title font-semibold text-white flex items-center gap-2">
                   <Lock className="w-4 h-4 text-emerald-400" />
                   <span>Zero-Secret Guarantee</span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="admin-muted text-[11px] text-slate-400 leading-relaxed">
                   Passwords, password hashes, session cookies, OAuth bearer tokens, and private API keys are recursively scrubbed server-side prior to activity persistence and email dispatch.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <div className="font-semibold text-white flex items-center gap-2">
+              <div className="admin-subcard p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="admin-title font-semibold text-white flex items-center gap-2">
                   <Key className="w-4 h-4 text-cyan-400" />
                   <span>Server-Enforced Authorization</span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="admin-muted text-[11px] text-slate-400 leading-relaxed">
                   Admin activity monitoring endpoints enforce cryptographic role checks (<span className="font-mono text-cyan-400">is_admin: true</span>) and require signed JWT or master secret keys. Ordinary contributors cannot read other users' activities.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <div className="font-semibold text-white flex items-center gap-2">
+              <div className="admin-subcard p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="admin-title font-semibold text-white flex items-center gap-2">
                   <Clock className="w-4 h-4 text-purple-400" />
                   <span>Notification Rate Limiting</span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="admin-muted text-[11px] text-slate-400 leading-relaxed">
                   Successful user sign-ins are rate-limited to at most one notification per 10-minute window per user, preventing email flooding. Suspicious login failures bypass throttling to generate immediate alerts.
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                <div className="font-semibold text-white flex items-center gap-2">
+              <div className="admin-subcard p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+                <div className="admin-title font-semibold text-white flex items-center gap-2">
                   <Server className="w-4 h-4 text-blue-400" />
                   <span>Resilient Background Auditing</span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="admin-muted text-[11px] text-slate-400 leading-relaxed">
                   Email notification dispatches are decoupled from main database operations. Third-party provider timeouts or failures never break user logins, registrations, or vouches.
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-[11px] text-cyan-300 font-mono">
+            <div className="admin-subcard p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-[11px] text-cyan-400 font-mono">
               Configured Administrator Target: {metrics?.admin_email || 'Configured Administrator'} • TrustMesh Governance 2026
             </div>
           </div>
