@@ -258,7 +258,7 @@ html.dark .admin-button-alt:hover {
 }
 
 /* ==========================================================================
-   LIGHT MODE PALETTE & THEME OVERRIDES (Full contrast, flawless text legibility)
+   LIGHT MODE PALETTE & THEME OVERRIDES (Deep rich text, maximum contrast)
    ========================================================================== */
 html.light {
   color-scheme: light;
@@ -266,7 +266,7 @@ html.light {
 
 html.light body {
   background-color: #f8fafc !important;
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light ::-webkit-scrollbar-track {
@@ -274,18 +274,18 @@ html.light ::-webkit-scrollbar-track {
 }
 
 html.light ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #94a3b8;
 }
 
 html.light ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #64748b;
 }
 
 /* Light Mode Background Patterns */
 html.light .bg-grid-pattern {
   background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
 }
 
 html.light .bg-radial-gradient {
@@ -294,25 +294,25 @@ html.light .bg-radial-gradient {
 
 /* Light Mode Glass Panels */
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.88) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
 }
 
 html.light .glass-panel-hover:hover {
-  border-color: rgba(6, 182, 212, 0.4) !important;
-  box-shadow: 0 8px 30px -4px rgba(6, 182, 212, 0.15);
+  border-color: rgba(2, 132, 199, 0.5) !important;
+  box-shadow: 0 8px 30px -4px rgba(2, 132, 199, 0.18);
 }
 
 /* Structural Layout Components */
 html.light aside {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
 html.light header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: #cbd5e1 !important;
 }
 
 /* Surface backgrounds */
@@ -340,8 +340,8 @@ html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/80,
 html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/95 {
-  background-color: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.06);
 }
 
 html.light .bg-slate-800,
@@ -361,177 +361,237 @@ html.light .border-slate-700,
 html.light .border-slate-700\/80,
 html.light .border-slate-700\/70,
 html.light .border-slate-700\/50 {
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
-/* Text & Typography */
+/* ==========================================================================
+   DEEP DARK TYPOGRAPHY IN LIGHT MODE (WCAG AAA High Contrast)
+   ========================================================================== */
 html.light .text-white,
 html.light .text-slate-100 {
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light .text-slate-200,
 html.light .text-slate-300 {
-  color: #334155 !important;
+  color: #090d16 !important;
 }
 
 html.light .text-slate-400,
-html.light .text-slate-500 {
-  color: #64748b !important;
+html.light .text-slate-500,
+html.light .text-gray-400,
+html.light .text-gray-500,
+html.light .text-zinc-400,
+html.light .text-zinc-500 {
+  color: #1e293b !important;
 }
 
-/* Form Controls */
+html.light p {
+  color: #0f172a !important;
+}
+
+html.light label {
+  color: #020617 !important;
+}
+
+html.light th {
+  color: #090d16 !important;
+}
+
+html.light td {
+  color: #0f172a !important;
+}
+
+/* Colored Accents & Badges: Darkened for Crisp White-Background Contrast */
+html.light .text-cyan-300,
+html.light .text-cyan-400 {
+  color: #0369a1 !important;
+}
+
+html.light .text-emerald-300,
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html.light .text-rose-300,
+html.light .text-rose-400 {
+  color: #be123c !important;
+}
+
+html.light .text-purple-300,
+html.light .text-purple-400 {
+  color: #6b21a8 !important;
+}
+
+html.light .text-amber-300,
+html.light .text-amber-400 {
+  color: #b45309 !important;
+}
+
+html.light .text-blue-300,
+html.light .text-blue-400 {
+  color: #1d4ed8 !important;
+}
+
+html.light .text-indigo-300,
+html.light .text-indigo-400 {
+  color: #3730a3 !important;
+}
+
+/* Form Controls in Light Mode */
 html.light input,
 html.light select,
 html.light textarea {
   background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  color: #020617 !important;
+  border-color: #94a3b8 !important;
   color-scheme: light;
 }
 
 html.light select option {
   background-color: #ffffff !important;
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light input::placeholder,
 html.light textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #475569 !important;
 }
 
 /* Admin Activity Monitoring Light Mode Specific Overrides */
 html.light .admin-card {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05) !important;
+  border-color: #cbd5e1 !important;
+  color: #020617 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06) !important;
 }
 
 html.light .admin-subcard {
   background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  color: #020617 !important;
 }
 
 html.light .admin-banner {
   background: linear-gradient(135deg, #f0fdfa 0%, #ffffff 50%, #f1f5f9 100%) !important;
-  border-color: #cbd5e1 !important;
-  box-shadow: 0 8px 30px -4px rgba(6, 182, 212, 0.12) !important;
+  border-color: #94a3b8 !important;
+  box-shadow: 0 8px 30px -4px rgba(2, 132, 199, 0.15) !important;
 }
 
 html.light .admin-threat-banner {
   background-color: #fff1f2 !important;
-  border-color: #fecdd3 !important;
-  color: #9f1239 !important;
+  border-color: #fca5a5 !important;
+  color: #881337 !important;
 }
 
 html.light .admin-threat-banner span,
 html.light .admin-threat-banner p {
   color: #881337 !important;
+  font-weight: 500 !important;
 }
 
 html.light .admin-table-head {
-  background-color: #f8fafc !important;
-  color: #475569 !important;
-  border-color: #e2e8f0 !important;
+  background-color: #f1f5f9 !important;
+  color: #090d16 !important;
+  border-color: #cbd5e1 !important;
+  font-weight: 700 !important;
 }
 
 html.light .admin-table-body {
-  border-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
 }
 
 html.light .admin-table-row {
-  border-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
 }
 
 html.light .admin-table-row:hover {
-  background-color: #f8fafc !important;
+  background-color: #f1f5f9 !important;
 }
 
 html.light .admin-table-drawer {
-  background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
 }
 
 html.light .admin-input,
 html.light .admin-select {
   background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+  color: #020617 !important;
 }
 
 html.light .admin-input::placeholder {
-  color: #94a3b8 !important;
+  color: #475569 !important;
 }
 
 html.light .admin-pre {
-  background-color: #0f172a !important;
+  background-color: #020617 !important;
   color: #34d399 !important;
   border: 1px solid #1e293b !important;
 }
 
 html.light .admin-title {
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light .admin-muted {
-  color: #64748b !important;
+  color: #1e293b !important;
 }
 
 html.light .admin-desc {
-  color: #334155 !important;
+  color: #090d16 !important;
 }
 
 html.light .admin-border-t,
 html.light .admin-border-b {
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
 html.light .admin-icon-box {
   background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
 html.light .admin-lock-card {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.12) !important;
 }
 
 html.light .admin-button-alt {
   background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
-  color: #334155 !important;
+  border-color: #94a3b8 !important;
+  color: #090d16 !important;
 }
 
 html.light .admin-button-alt:hover {
   background-color: #e2e8f0 !important;
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light .admin-tab:not(.active) {
-  color: #64748b !important;
+  color: #1e293b !important;
 }
 
 html.light .admin-tab:not(.active):hover {
   background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light .admin-pill:not(.active) {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
 }
 
 html.light .admin-pill:not(.active):hover {
   background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 html.light .admin-user-title {
-  color: #0f172a !important;
+  color: #020617 !important;
 }
 
 /* React Flow in Light Mode */
