@@ -77,3 +77,39 @@ def test_github_import_does_not_remove_existing_records(client, db_session):
     updated_slugs = {p.slug for p in db_session.query(Project).all()}
     assert initial_slugs.issubset(updated_slugs)
     assert db_session.query(Project).count() == initial_count + 1
+
+def test_delete_project_endpoint(client, db_session):
+    """Verifies that DELETE /api/projects/{project_id} permanently removes the project and associated edges."""
+    # 1. Create a project to delete
+    create_res = client.post("/api/projects", json={
+        "name": "Temporary Deletable Repo",
+        "slug": "temp-deletable-repo",
+        "description": "Project created to test deletion",
+        "category": "Testing",
+        "stars": 42
+    })
+    assert create_res.status_code == 201
+    proj_id = create_res.json()["id"]
+
+    # Verify project exists
+    get_res = client.get(f"/api/projects/{proj_id}")
+    assert get_res.status_code == 200
+
+    # 2. Delete the project
+    del_res = client.delete(f"/api/projects/{proj_id}")
+    assert del_res.status_code == 200
+    assert del_res.json()["status"] == "success"
+    assert del_res.json()["deleted_id"] == proj_id
+
+    # 3. Verify project is 404
+    get_after = client.get(f"/api/projects/{proj_id}")
+    assert get_after.status_code == 404
+
+    # 4. Verify DB no longer contains project
+    assert db_session.query(Project).filter(Project.id == proj_id).first() is None
+
+def test_delete_nonexistent_project_returns_404(client):
+    """Verifies that attempting to delete an unknown project returns HTTP 404."""
+    del_res = client.delete("/api/projects/proj-non-existent-999")
+    assert del_res.status_code == 404
+    assert "not found" in del_res.json()["detail"].lower()

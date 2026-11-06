@@ -19,6 +19,7 @@ import {
   GitPullRequest,
   GitBranch,
   HelpCircle,
+  Trash2,
 } from 'lucide-react';
 
 const getInitialProjects = () => {
@@ -91,6 +92,12 @@ export default function ProjectsView() {
   const [syncError, setSyncError] = useState('');
   const [syncSuccess, setSyncSuccess] = useState('');
 
+  // Delete Project Confirmation Modal State
+  const [deletingProject, setDeletingProject] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const userDeletedRef = useRef(false);
+
   const loadProjects = async (isManualRefresh = false) => {
     const seq = ++reqSeq.current;
 
@@ -113,10 +120,11 @@ export default function ProjectsView() {
       const incomingList = Array.isArray(data) ? data : [];
 
       // Consistency guard against desynchronized serverless instance returning empty array
-      if (incomingList.length === 0 && projectsRef.current.length > 0) {
+      if (incomingList.length === 0 && projectsRef.current.length > 0 && !userDeletedRef.current) {
         console.warn(`[TrustMesh Guard] Serverless cluster instance returned empty project array. Preserving ${projectsRef.current.length} existing projects.`);
         setSyncWarning('Remote cluster node returned empty records. Preserving verified projects.');
       } else {
+        userDeletedRef.current = false;
         setProjects(incomingList);
         projectsRef.current = incomingList;
         try {
@@ -330,6 +338,31 @@ export default function ProjectsView() {
       alert(`Error updating peer weight: ${err.message}`);
     } finally {
       setPeerSaving(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!deletingProject) return;
+    try {
+      setDeleteLoading(true);
+      setDeleteError('');
+      await api.deleteProject(deletingProject.id);
+
+      userDeletedRef.current = true;
+      const remaining = projects.filter((p) => p.id !== deletingProject.id);
+      setProjects(remaining);
+      projectsRef.current = remaining;
+      try {
+        sessionStorage.setItem('trustmesh_cached_projects', JSON.stringify(remaining));
+      } catch {}
+
+      setSuccessMsg(`Project "${deletingProject.name}" was successfully deleted.`);
+      setDeletingProject(null);
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      setDeleteError(err.message || 'Failed to delete project.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -554,6 +587,18 @@ export default function ProjectsView() {
                     >
                       <Sliders className="w-3.5 h-3.5" />
                       <span>Tune Policy</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setDeleteError('');
+                        setDeletingProject(proj);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/40 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                      title="Delete Project from TrustMesh"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Delete</span>
                     </button>
                   </div>
                 </div>
@@ -1236,6 +1281,65 @@ export default function ProjectsView() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Confirmation Modal */}
+      {deletingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-[#090d16] border border-rose-500/40 rounded-2xl shadow-[0_0_50px_rgba(244,63,94,0.2)] p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-rose-400 font-bold text-base">
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                  <Trash2 className="w-5 h-5 text-rose-400" />
+                </div>
+                <span>Delete Project</span>
+              </div>
+              <button
+                onClick={() => setDeletingProject(null)}
+                disabled={deleteLoading}
+                className="text-slate-400 hover:text-white text-xs font-mono p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-300">
+              <p>
+                Are you sure you want to permanently delete <strong className="text-white font-mono">{deletingProject.name}</strong>?
+              </p>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                This action will remove the project from the TrustMesh ecosystem, along with its associated peering relationships and pull request indices.
+              </p>
+            </div>
+
+            {deleteError && (
+              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeletingProject(null)}
+                disabled={deleteLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProject}
+                disabled={deleteLoading}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-rose-950/50 transition-all disabled:opacity-50"
+              >
+                <Trash2 className={`w-3.5 h-3.5 ${deleteLoading ? 'animate-spin' : ''}`} />
+                <span>{deleteLoading ? 'Deleting...' : 'Yes, Delete Project'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

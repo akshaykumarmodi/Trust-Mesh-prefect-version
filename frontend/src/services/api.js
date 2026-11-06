@@ -121,6 +121,7 @@ export const api = {
   getProject: (id, options = {}) => request(`/projects/${id}`, options),
   createProject: (data) => request('/projects', { method: 'POST', body: JSON.stringify(data) }),
   updateProject: (id, data) => request(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
   setProjectPeerWeight: (projectId, data) => request(`/projects/${projectId}/peers`, { method: 'POST', body: JSON.stringify(data) }),
   getProjectRelationships: (projectId) => request(`/projects/${projectId}/relationships`),
 
